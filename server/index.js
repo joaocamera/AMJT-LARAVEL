@@ -14,6 +14,13 @@ const adminPass = process.env.ADMIN_PASS || "1234";
 const adminToken = process.env.ADMIN_TOKEN || "admin-token";
 const userTokenSecret = process.env.USER_TOKEN_SECRET || "user-secret";
 const MONTHLY_FEE = Number(process.env.MONTHLY_FEE || 30);
+const START_COMPETENCIA = "2025-12-01";
+
+function formatCompetencia(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -83,33 +90,65 @@ function normalizeCpf(value) {
 
 app.get("/api/inscritos", requireAuth, async (req, res) => {
   const search = (req.query.search || "").trim();
+  const status = (req.query.status || "todos").toLowerCase();
   const like = `%${search}%`;
   try {
     const [totalRows] = await pool.query("SELECT COUNT(*) AS total FROM inscritos");
     const total = totalRows?.[0]?.total || 0;
+    const prevMonth = new Date();
+    prevMonth.setDate(1);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    const competencia = formatCompetencia(prevMonth);
+    const applyCompliance = competencia >= START_COMPETENCIA;
     const baseSelect =
       "SELECT i.idinscritos, i.nome, i.cpf, i.rua, i.numero, i.telefone, i.email, i.profissao, " +
       "COALESCE(m.total_pago, 0) AS total_pago, COALESCE(m.total_doacao, 0) AS total_doacao " +
       "FROM inscritos i " +
       "LEFT JOIN (SELECT idinscrito, SUM(valor_total) AS total_pago, SUM(doacao) AS total_doacao FROM mensalidades GROUP BY idinscrito) m " +
       "ON m.idinscrito = i.idinscritos ";
+    const whereParts = [];
+    const params = [];
+
     if (search) {
-      const [rows] = await pool.query(
-        `${baseSelect}WHERE i.nome LIKE ? OR i.cpf LIKE ? ORDER BY i.nome`,
-        [like, like]
-      );
-      const [filteredRows] = await pool.query(
-        "SELECT COUNT(*) AS total FROM inscritos WHERE nome LIKE ? OR cpf LIKE ?",
-        [like, like]
-      );
-      const filtered = filteredRows?.[0]?.total || 0;
-      res.json({ rows, total, filtered });
+      whereParts.push("(i.nome LIKE ? OR i.cpf LIKE ? OR i.rua LIKE ?)");
+      params.push(like, like, like);
+    }
+
+    if (status === "inadimplente" || status === "adimplente") {
+      if (!applyCompliance) {
+        if (status === "inadimplente") {
+          res.json({ rows: [], total, filtered: 0 });
+          return;
+        }
+      } else if (status === "inadimplente") {
+        whereParts.push(
+          "NOT EXISTS (SELECT 1 FROM mensalidades m2 WHERE m2.idinscrito = i.idinscritos AND m2.competencia = ?)"
+        );
+        params.push(competencia);
+      } else if (status === "adimplente") {
+        whereParts.push(
+          "EXISTS (SELECT 1 FROM mensalidades m2 WHERE m2.idinscrito = i.idinscritos AND m2.competencia = ?)"
+        );
+        params.push(competencia);
+      }
+    }
+
+    const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")}` : "";
+    const [rows] = await pool.query(
+      `${baseSelect}${whereClause} ORDER BY i.nome`,
+      params
+    );
+
+    const [filteredRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM inscritos i ${whereClause}`,
+      params
+    );
+    const filtered = filteredRows?.[0]?.total || 0;
+    if (status === "inadimplente" && !applyCompliance) {
+      res.json({ rows: [], total, filtered: 0 });
       return;
     }
-    const [rows] = await pool.query(
-      `${baseSelect}ORDER BY i.nome`
-    );
-    res.json({ rows, total, filtered: total });
+    res.json({ rows, total, filtered: search || status !== "todos" ? filtered : total });
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar inscritos" });
   }
