@@ -88,6 +88,10 @@ function normalizeCpf(value) {
   return String(value || "").replace(/\D/g, "");
 }
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 app.get("/api/inscritos", requireAuth, async (req, res) => {
   const search = (req.query.search || "").trim();
   const status = (req.query.status || "todos").toLowerCase();
@@ -332,6 +336,32 @@ app.put("/api/inscritos/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const { cpf, rua, numero, telefone, email, profissao } = req.body || {};
   try {
+    if (!cpf || !normalizeCpf(cpf)) {
+      res.status(400).json({ error: "CPF e obrigatorio" });
+      return;
+    }
+    if (!email || !normalizeEmail(email)) {
+      res.status(400).json({ error: "Email e obrigatorio" });
+      return;
+    }
+    const normalizedCpf = normalizeCpf(cpf);
+    const normalizedEmail = normalizeEmail(email);
+    const [cpfRows] = await pool.query(
+      "SELECT idinscritos FROM inscritos WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = ? AND idinscritos <> ? LIMIT 1",
+      [normalizedCpf, id]
+    );
+    if (cpfRows?.length) {
+      res.status(409).json({ error: "CPF ja cadastrado" });
+      return;
+    }
+    const [emailRows] = await pool.query(
+      "SELECT idinscritos FROM inscritos WHERE LOWER(email) = ? AND idinscritos <> ? LIMIT 1",
+      [normalizedEmail, id]
+    );
+    if (emailRows?.length) {
+      res.status(409).json({ error: "Email ja cadastrado" });
+      return;
+    }
     const [result] = await pool.query(
       "UPDATE inscritos SET cpf = ?, rua = ?, numero = ?, telefone = ?, email = ?, profissao = ?, updated_at = NOW() WHERE idinscritos = ?",
       [cpf || null, rua || null, numero || null, telefone || null, email || null, profissao || null, id]
@@ -343,6 +373,66 @@ app.put("/api/inscritos/:id", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Erro ao atualizar inscrito" });
+  }
+});
+
+app.post("/api/inscritos", requireAuth, async (req, res) => {
+  const { nome, cpf, rua, numero, telefone, email, profissao } = req.body || {};
+  if (!nome || !String(nome).trim()) {
+    res.status(400).json({ error: "Nome e obrigatorio" });
+    return;
+  }
+  if (!cpf || !normalizeCpf(cpf)) {
+    res.status(400).json({ error: "CPF e obrigatorio" });
+    return;
+  }
+  if (!email || !normalizeEmail(email)) {
+    res.status(400).json({ error: "Email e obrigatorio" });
+    return;
+  }
+  const normalizedCpf = normalizeCpf(cpf);
+  const normalizedEmail = normalizeEmail(email);
+  try {
+    const [cpfRows] = await pool.query(
+      "SELECT idinscritos FROM inscritos WHERE REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = ? LIMIT 1",
+      [normalizedCpf]
+    );
+    if (cpfRows?.length) {
+      res.status(409).json({ error: "CPF ja cadastrado" });
+      return;
+    }
+    const [emailRows] = await pool.query(
+      "SELECT idinscritos FROM inscritos WHERE LOWER(email) = ? LIMIT 1",
+      [normalizedEmail]
+    );
+    if (emailRows?.length) {
+      res.status(409).json({ error: "Email ja cadastrado" });
+      return;
+    }
+    const [result] = await pool.query(
+      "INSERT INTO inscritos (nome, cpf, rua, numero, telefone, email, profissao, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+      [
+        String(nome).trim(),
+        cpf || null,
+        rua || null,
+        numero || null,
+        telefone || null,
+        email || null,
+        profissao || null
+      ]
+    );
+    res.status(201).json({
+      idinscritos: result.insertId,
+      nome: String(nome).trim(),
+      cpf: cpf || null,
+      rua: rua || null,
+      numero: numero || null,
+      telefone: telefone || null,
+      email: email || null,
+      profissao: profissao || null
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao criar associado" });
   }
 });
 

@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS inscritos (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL,
   PRIMARY KEY (idinscritos),
+  UNIQUE KEY uniq_inscritos_cpf (cpf),
+  UNIQUE KEY uniq_inscritos_email (email),
   KEY idx_inscritos_nome (nome),
   KEY idx_inscritos_cpf (cpf)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

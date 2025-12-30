@@ -323,6 +323,139 @@ function EditModal({ open, onClose, onSave, value }) {
   );
 }
 
+function AddAssociadoModal({ open, onClose, onSave }) {
+  const [form, setForm] = useState({
+    nome: "",
+    cpf: "",
+    rua: "",
+    numero: "",
+    telefone: "",
+    email: "",
+    profissao: ""
+  });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        nome: "",
+        cpf: "",
+        rua: "",
+        numero: "",
+        telefone: "",
+        email: "",
+        profissao: ""
+      });
+    }
+  }, [open]);
+
+  function updateField(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="w-full max-w-3xl rounded-2xl bg-white p-6 shadow-card">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Cadastro
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              Adicionar associado
+            </h2>
+          </div>
+          <button
+            className="text-sm text-slate-400 hover:text-slate-700"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-slate-600">Nome</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.nome}
+              onChange={(event) => updateField("nome", event.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">CPF</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.cpf}
+              onChange={(event) => updateField("cpf", event.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Telefone</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.telefone}
+              onChange={(event) => updateField("telefone", event.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Rua</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.rua}
+              onChange={(event) => updateField("rua", event.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Numero</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.numero}
+              onChange={(event) => updateField("numero", event.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Email</label>
+            <input
+              type="email"
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.email}
+              onChange={(event) => updateField("email", event.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Profissao</label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.profissao}
+              onChange={(event) => updateField("profissao", event.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            onClick={() => onSave(form)}
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function formatDateInput(value) {
   return value.toISOString().slice(0, 10);
 }
@@ -804,6 +937,7 @@ function Dashboard({ token, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [mensalidadesOpen, setMensalidadesOpen] = useState(false);
   const [mensalidadesInscrito, setMensalidadesInscrito] = useState(null);
   const [mensalidadesRows, setMensalidadesRows] = useState([]);
@@ -879,6 +1013,35 @@ function Dashboard({ token, onLogout }) {
       setEditing(null);
     } catch (err) {
       setError("Nao foi possivel salvar as alteracoes.");
+    }
+  }
+
+  async function handleAdd(form) {
+    try {
+      const response = await apiFetch(
+        "/api/inscritos",
+        {
+          method: "POST",
+          body: JSON.stringify(form)
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao adicionar");
+      }
+      const data = await response.json();
+      setRows((prev) => [
+        {
+          ...data,
+          total_pago: 0,
+          total_doacao: 0
+        },
+        ...prev
+      ]);
+      setAdding(false);
+    } catch (err) {
+      setError(err.message || "Nao foi possivel adicionar o associado.");
     }
   }
 
@@ -1058,6 +1221,12 @@ function Dashboard({ token, onLogout }) {
                   onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
+              <button
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                onClick={() => setAdding(true)}
+              >
+                Novo associado
+              </button>
             </div>
           </div>
 
@@ -1131,6 +1300,11 @@ function Dashboard({ token, onLogout }) {
         value={editing}
         onClose={() => setEditing(null)}
         onSave={handleSave}
+      />
+      <AddAssociadoModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onSave={handleAdd}
       />
       <MensalidadesModal
         open={mensalidadesOpen}
