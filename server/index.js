@@ -92,6 +92,52 @@ function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+async function fetchEnquetes({ statusList, userId }) {
+  const statuses = statusList && statusList.length ? statusList : ["aberta", "encerrada"];
+  const [polls] = await pool.query(
+    "SELECT idenquete, titulo, descricao, status, created_at FROM enquetes WHERE status IN (?) ORDER BY created_at DESC",
+    [statuses]
+  );
+  if (!polls.length) return [];
+  const pollIds = polls.map((poll) => poll.idenquete);
+  const [options] = await pool.query(
+    "SELECT o.idopcao, o.idenquete, o.texto, COUNT(v.idvoto) AS votos " +
+      "FROM enquete_opcoes o " +
+      "LEFT JOIN enquete_votos v ON v.idopcao = o.idopcao " +
+      "WHERE o.idenquete IN (?) " +
+      "GROUP BY o.idopcao " +
+      "ORDER BY o.idopcao",
+    [pollIds]
+  );
+  const optionsByPoll = options.reduce((acc, option) => {
+    if (!acc[option.idenquete]) acc[option.idenquete] = [];
+    acc[option.idenquete].push({
+      idopcao: option.idopcao,
+      texto: option.texto,
+      votos: Number(option.votos || 0)
+    });
+    return acc;
+  }, {});
+
+  let votesByPoll = {};
+  if (userId) {
+    const [votes] = await pool.query(
+      "SELECT idenquete, idopcao FROM enquete_votos WHERE idinscrito = ? AND idenquete IN (?)",
+      [userId, pollIds]
+    );
+    votesByPoll = votes.reduce((acc, vote) => {
+      acc[vote.idenquete] = vote.idopcao;
+      return acc;
+    }, {});
+  }
+
+  return polls.map((poll) => ({
+    ...poll,
+    opcoes: optionsByPoll[poll.idenquete] || [],
+    voto_idopcao: votesByPoll[poll.idenquete] || null
+  }));
+}
+
 app.get("/api/inscritos", requireAuth, async (req, res) => {
   const search = (req.query.search || "").trim();
   const status = (req.query.status || "todos").toLowerCase();
@@ -155,6 +201,157 @@ app.get("/api/inscritos", requireAuth, async (req, res) => {
     res.json({ rows, total, filtered: search || status !== "todos" ? filtered : total });
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar inscritos" });
+  }
+});
+
+app.get("/api/enquetes", requireAuth, async (req, res) => {
+  try {
+    const status = req.query.status;
+    const statusList = status ? [String(status)] : undefined;
+    const data = await fetchEnquetes({ statusList });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao buscar enquetes" });
+  }
+});
+
+app.post("/api/enquetes", requireAuth, async (req, res) => {
+  const { titulo, descricao, opcoes } = req.body || {};
+  const cleanTitle = String(titulo || "").trim();
+  const cleanOptions = Array.isArray(opcoes)
+    ? opcoes.map((opt) => String(opt || "").trim()).filter(Boolean)
+    : [];
+
+  if (!cleanTitle) {
+    res.status(400).json({ error: "Titulo e obrigatorio" });
+    return;
+  }
+  if (cleanOptions.length < 2 || cleanOptions.length > 4) {
+    res.status(400).json({ error: "A enquete deve ter entre 2 e 4 opcoes" });
+    return;
+  }
+
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.query(
+      "INSERT INTO enquetes (titulo, descricao, status, created_at, updated_at) VALUES (?, ?, 'aberta', NOW(), NOW())",
+      [cleanTitle, descricao || null]
+    );
+    const pollId = result.insertId;
+    const values = cleanOptions.map((opt) => [pollId, opt]);
+    await connection.query(
+      "INSERT INTO enquete_opcoes (idenquete, texto) VALUES ?",
+      [values]
+    );
+    await connection.commit();
+    res.status(201).json({ idenquete: pollId });
+  } catch (err) {
+    await connection.rollback();
+    res.status(500).json({ error: "Erro ao criar enquete" });
+  } finally {
+    connection.release();
+  }
+});
+
+app.put("/api/enquetes/:id", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { status, titulo, descricao } = req.body || {};
+  const updates = [];
+  const params = [];
+
+  if (titulo !== undefined) {
+    const cleanTitle = String(titulo || "").trim();
+    if (!cleanTitle) {
+      res.status(400).json({ error: "Titulo nao pode ficar vazio" });
+      return;
+    }
+    updates.push("titulo = ?");
+    params.push(cleanTitle);
+  }
+  if (descricao !== undefined) {
+    updates.push("descricao = ?");
+    params.push(descricao || null);
+  }
+  if (status !== undefined) {
+    if (!["aberta", "encerrada"].includes(status)) {
+      res.status(400).json({ error: "Status invalido" });
+      return;
+    }
+    updates.push("status = ?");
+    params.push(status);
+  }
+
+  if (!updates.length) {
+    res.status(400).json({ error: "Nenhuma alteracao informada" });
+    return;
+  }
+
+  try {
+    params.push(id);
+    await pool.query(
+      `UPDATE enquetes SET ${updates.join(", ")}, updated_at = NOW() WHERE idenquete = ?`,
+      params
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao atualizar enquete" });
+  }
+});
+
+app.get("/api/associado/enquetes", requireUserAuth, async (req, res) => {
+  try {
+    const data = await fetchEnquetes({ statusList: ["aberta"], userId: req.user.idinscrito });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao buscar enquetes" });
+  }
+});
+
+app.post("/api/associado/enquetes/:id/votar", requireUserAuth, async (req, res) => {
+  const { id } = req.params;
+  const { idopcao } = req.body || {};
+  if (!idopcao) {
+    res.status(400).json({ error: "Opcao e obrigatoria" });
+    return;
+  }
+  try {
+    const [pollRows] = await pool.query(
+      "SELECT status FROM enquetes WHERE idenquete = ? LIMIT 1",
+      [id]
+    );
+    if (!pollRows?.length) {
+      res.status(404).json({ error: "Enquete nao encontrada" });
+      return;
+    }
+    if (pollRows[0].status !== "aberta") {
+      res.status(400).json({ error: "Enquete encerrada" });
+      return;
+    }
+    const [optionRows] = await pool.query(
+      "SELECT idopcao FROM enquete_opcoes WHERE idopcao = ? AND idenquete = ? LIMIT 1",
+      [idopcao, id]
+    );
+    if (!optionRows?.length) {
+      res.status(400).json({ error: "Opcao invalida" });
+      return;
+    }
+    const [existingVote] = await pool.query(
+      "SELECT idvoto FROM enquete_votos WHERE idenquete = ? AND idinscrito = ? LIMIT 1",
+      [id, req.user.idinscrito]
+    );
+    if (existingVote?.length) {
+      res.status(409).json({ error: "Voce ja votou nesta enquete" });
+      return;
+    }
+    await pool.query(
+      "INSERT INTO enquete_votos (idenquete, idopcao, idinscrito) VALUES (?, ?, ?)",
+      [id, idopcao, req.user.idinscrito]
+    );
+    const data = await fetchEnquetes({ statusList: ["aberta", "encerrada"], userId: req.user.idinscrito });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao registrar voto" });
   }
 });
 

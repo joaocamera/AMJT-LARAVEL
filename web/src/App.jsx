@@ -460,6 +460,36 @@ function formatDateInput(value) {
   return value.toISOString().slice(0, 10);
 }
 
+function PollOptionsList({ options, onVote, votedOption }) {
+  return (
+    <div className="mt-4 grid gap-2">
+      {options.map((option) => {
+        const isSelected = votedOption === option.idopcao;
+        return (
+          <button
+            key={option.idopcao}
+            type="button"
+            className={`flex items-center justify-between rounded-lg border px-4 py-2 text-sm ${
+              votedOption
+                ? "cursor-default border-slate-200 bg-slate-50 text-slate-600"
+                : "border-slate-200 bg-white text-slate-700 hover:border-blue-200 hover:bg-blue-50"
+            } ${isSelected ? "border-blue-300 bg-blue-50 text-blue-700" : ""}`}
+            onClick={() => (votedOption ? null : onVote(option.idopcao))}
+            disabled={Boolean(votedOption)}
+          >
+            <span>{option.texto}</span>
+            {votedOption ? (
+              <span className="text-xs font-semibold text-slate-500">
+                {option.votos} votos
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MensalidadesModal({
   open,
   onClose,
@@ -620,6 +650,376 @@ function MensalidadesModal({
   );
 }
 
+function AdminEnquetes({ token }) {
+  const [enquetes, setEnquetes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    titulo: "",
+    descricao: "",
+    opcoes: ["", ""]
+  });
+
+  async function loadEnquetes() {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/api/enquetes", {}, token);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar");
+      }
+      const data = await response.json();
+      setEnquetes(data || []);
+    } catch (err) {
+      setError("Nao foi possivel carregar as enquetes.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadEnquetes();
+  }, [token]);
+
+  function updateOption(index, value) {
+    setForm((prev) => {
+      const next = [...prev.opcoes];
+      next[index] = value;
+      return { ...prev, opcoes: next };
+    });
+  }
+
+  function addOption() {
+    setForm((prev) =>
+      prev.opcoes.length >= 4 ? prev : { ...prev, opcoes: [...prev.opcoes, ""] }
+    );
+  }
+
+  function removeOption(index) {
+    setForm((prev) => {
+      const next = prev.opcoes.filter((_, idx) => idx !== index);
+      return { ...prev, opcoes: next.length >= 2 ? next : prev.opcoes };
+    });
+  }
+
+  async function handleCreate() {
+    setCreating(true);
+    setError("");
+    try {
+      const response = await apiFetch(
+        "/api/enquetes",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            titulo: form.titulo,
+            descricao: form.descricao,
+            opcoes: form.opcoes
+          })
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao criar");
+      }
+      setForm({ titulo: "", descricao: "", opcoes: ["", ""] });
+      await loadEnquetes();
+    } catch (err) {
+      setError(err.message || "Nao foi possivel criar a enquete.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function updateStatus(id, status) {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch(
+        `/api/enquetes/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ status })
+        },
+        token
+      );
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar");
+      }
+      await loadEnquetes();
+    } catch (err) {
+      setError("Nao foi possivel atualizar a enquete.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateEnquete(id, updates) {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch(
+        `/api/enquetes/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(updates)
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao atualizar");
+      }
+      await loadEnquetes();
+    } catch (err) {
+      setError(err.message || "Nao foi possivel atualizar a enquete.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-card">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-xl font-display text-slate-900">Enquetes</h2>
+          <p className="text-sm text-slate-500">
+            Crie e acompanhe as enquetes da associacao.
+          </p>
+        </div>
+        <button
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          onClick={() => setCreating((prev) => !prev)}
+        >
+          {creating ? "Fechar" : "Nova enquete"}
+        </button>
+      </div>
+
+      {creating ? (
+        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-slate-600">Titulo</label>
+              <input
+                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={form.titulo}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, titulo: event.target.value }))
+                }
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-slate-600">Descricao</label>
+              <textarea
+                className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                rows={3}
+                value={form.descricao}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, descricao: event.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-slate-600">Opcoes</p>
+            <div className="mt-2 grid gap-3 md:grid-cols-2">
+              {form.opcoes.map((option, index) => (
+                <div key={`option-${index}`} className="flex items-center gap-2">
+                  <input
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    value={option}
+                    onChange={(event) => updateOption(index, event.target.value)}
+                  />
+                  {form.opcoes.length > 2 ? (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                      onClick={() => removeOption(index)}
+                    >
+                      Remover
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-xs text-slate-500">Maximo de 4 opcoes.</p>
+              <button
+                type="button"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                onClick={addOption}
+                disabled={form.opcoes.length >= 4}
+              >
+                Adicionar opcao
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleCreate}
+              disabled={!form.titulo.trim() || form.opcoes.length < 2}
+            >
+              Criar enquete
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
+
+      <div className="mt-6 grid gap-4">
+        {loading ? (
+          <p className="text-sm text-slate-500">Carregando enquetes...</p>
+        ) : enquetes.length === 0 ? (
+          <p className="text-sm text-slate-500">Nenhuma enquete criada.</p>
+        ) : (
+          enquetes.map((poll) => (
+            <AdminEnqueteCard
+              key={poll.idenquete}
+              poll={poll}
+              onStatusChange={updateStatus}
+              onSave={updateEnquete}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminEnqueteCard({ poll, onStatusChange, onSave }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [titulo, setTitulo] = useState(poll.titulo || "");
+  const [descricao, setDescricao] = useState(poll.descricao || "");
+
+  useEffect(() => {
+    setTitulo(poll.titulo || "");
+    setDescricao(poll.descricao || "");
+  }, [poll.titulo, poll.descricao]);
+
+  async function handleSave() {
+    await onSave(poll.idenquete, { titulo, descricao });
+    setIsEditing(false);
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex-1">
+          {isEditing ? (
+            <div className="grid gap-2">
+              <input
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={titulo}
+                onChange={(event) => setTitulo(event.target.value)}
+              />
+              <textarea
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                rows={2}
+                value={descricao}
+                onChange={(event) => setDescricao(event.target.value)}
+              />
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-semibold text-slate-900">{poll.titulo}</p>
+              {poll.descricao ? (
+                <p className="text-xs text-slate-500">{poll.descricao}</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              poll.status === "aberta"
+                ? "bg-emerald-50 text-emerald-600"
+                : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {poll.status === "aberta" ? "Aberta" : "Encerrada"}
+          </span>
+          <button
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+            onClick={() =>
+              onStatusChange(
+                poll.idenquete,
+                poll.status === "aberta" ? "encerrada" : "aberta"
+              )
+            }
+          >
+            {poll.status === "aberta" ? "Encerrar" : "Reabrir"}
+          </button>
+          <button
+            className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+            onClick={() => setIsEditing((prev) => !prev)}
+          >
+            {isEditing ? "Cancelar" : "Editar"}
+          </button>
+          {isEditing ? (
+            <button
+              className={`text-xs font-semibold ${
+                titulo.trim()
+                  ? "text-blue-600 hover:text-blue-700"
+                  : "cursor-not-allowed text-slate-300"
+              }`}
+              onClick={handleSave}
+              disabled={!titulo.trim()}
+            >
+              Salvar
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2">
+        {poll.opcoes.map((option) => (
+          <div
+            key={option.idopcao}
+            className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs text-slate-600"
+          >
+            <span>{option.texto}</span>
+            <span className="font-semibold">{option.votos} votos</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminEnquetesModal({ open, onClose, token }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="w-full max-w-5xl rounded-2xl bg-white p-6 shadow-card">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Enquetes
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              Administrar enquetes
+            </h2>
+          </div>
+          <button
+            className="text-sm text-slate-400 hover:text-slate-700"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+        <div className="mt-6">
+          <AdminEnquetes token={token} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserDashboard({ token, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState({
@@ -636,6 +1036,9 @@ function UserDashboard({ token, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [polls, setPolls] = useState([]);
+  const [pollsError, setPollsError] = useState("");
+  const [pollsLoading, setPollsLoading] = useState(true);
 
   useEffect(() => {
     let isActive = true;
@@ -680,6 +1083,52 @@ function UserDashboard({ token, onLogout }) {
       isActive = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    let isActive = true;
+    async function loadPolls() {
+      setPollsLoading(true);
+      setPollsError("");
+      try {
+        const response = await apiFetch("/api/associado/enquetes", {}, token);
+        if (!response.ok) {
+          throw new Error("Falha ao carregar");
+        }
+        const data = await response.json();
+        if (isActive) setPolls(data || []);
+      } catch (err) {
+        if (isActive) setPollsError("Nao foi possivel carregar as enquetes.");
+      } finally {
+        if (isActive) setPollsLoading(false);
+      }
+    }
+    loadPolls();
+    return () => {
+      isActive = false;
+    };
+  }, [token]);
+
+  async function handleVote(idenquete, idopcao) {
+    setPollsError("");
+    try {
+      const response = await apiFetch(
+        `/api/associado/enquetes/${idenquete}/votar`,
+        {
+          method: "POST",
+          body: JSON.stringify({ idopcao })
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao votar");
+      }
+      const data = await response.json();
+      setPolls(data || []);
+    } catch (err) {
+      setPollsError(err.message || "Nao foi possivel registrar seu voto.");
+    }
+  }
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -848,6 +1297,70 @@ function UserDashboard({ token, onLogout }) {
 
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl bg-white p-6 shadow-card">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-display text-slate-900">
+                    Enquetes
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Participe das enquetes da associacao.
+                  </p>
+                </div>
+                <div className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
+                  {polls.length} enquete(s)
+                </div>
+              </div>
+              {pollsError ? (
+                <p className="mt-3 text-sm text-rose-600">{pollsError}</p>
+              ) : null}
+              {pollsLoading ? (
+                <p className="mt-3 text-sm text-slate-500">Carregando enquetes...</p>
+              ) : polls.length === 0 ? (
+                <p className="mt-3 text-sm text-slate-500">Nenhuma enquete ativa.</p>
+              ) : (
+                <div className="mt-4 grid gap-4">
+                  {polls.map((poll) => (
+                    <div
+                      key={poll.idenquete}
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {poll.titulo}
+                          </p>
+                          {poll.descricao ? (
+                            <p className="mt-1 text-xs text-slate-500">
+                              {poll.descricao}
+                            </p>
+                          ) : null}
+                        </div>
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            poll.status === "aberta"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-slate-200 text-slate-600"
+                          }`}
+                        >
+                          {poll.status === "aberta" ? "Aberta" : "Encerrada"}
+                        </span>
+                      </div>
+                      <PollOptionsList
+                        options={poll.opcoes}
+                        votedOption={poll.voto_idopcao}
+                        onVote={(idopcao) => handleVote(poll.idenquete, idopcao)}
+                      />
+                      {poll.voto_idopcao ? (
+                        <p className="mt-2 text-xs text-slate-500">
+                          Obrigado pelo voto! Confira o resultado acima.
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="rounded-2xl bg-white p-6 shadow-card">
               <h3 className="text-lg font-display text-slate-900">
                 QR Code para pagamento
               </h3>
@@ -938,6 +1451,7 @@ function Dashboard({ token, onLogout }) {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [enquetesOpen, setEnquetesOpen] = useState(false);
   const [mensalidadesOpen, setMensalidadesOpen] = useState(false);
   const [mensalidadesInscrito, setMensalidadesInscrito] = useState(null);
   const [mensalidadesRows, setMensalidadesRows] = useState([]);
@@ -1222,6 +1736,12 @@ function Dashboard({ token, onLogout }) {
                 />
               </div>
               <button
+                className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                onClick={() => setEnquetesOpen(true)}
+              >
+                Enquetes
+              </button>
+              <button
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                 onClick={() => setAdding(true)}
               >
@@ -1305,6 +1825,11 @@ function Dashboard({ token, onLogout }) {
         open={adding}
         onClose={() => setAdding(false)}
         onSave={handleAdd}
+      />
+      <AdminEnquetesModal
+        open={enquetesOpen}
+        onClose={() => setEnquetesOpen(false)}
+        token={token}
       />
       <MensalidadesModal
         open={mensalidadesOpen}
