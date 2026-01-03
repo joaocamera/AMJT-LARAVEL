@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LogOut, PencilLine, Search } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import logo from "./logo.jpeg";
 import qrCode from "./qr-code.svg";
 
@@ -16,9 +18,27 @@ function apiFetch(path, options = {}, token) {
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
+function apiUpload(path, formData, token) {
+  const headers = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    body: formData,
+    headers
+  });
+}
+
 function formatCurrency(value) {
-  const num = Number(value) || 0;
-  return `R$ ${num.toFixed(2)}`;
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return "R$ 0,00";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(num);
 }
 
 function formatDateDisplay(value) {
@@ -29,6 +49,104 @@ function formatDateDisplay(value) {
   const [year, month, day] = parts;
   if (!year || !month || !day) return String(value);
   return `${day}/${month}/${year}`;
+}
+
+const ASSOCIATION_NAME = "Associacao de Moradores Jardim Tarraf II";
+
+function escapeCsvValue(value) {
+  const str = String(value ?? "");
+  if (/[;"\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function buildReportCsv({ tipo, mesLabel, rows, columns, rowMapper }) {
+  const generatedAt = new Date().toLocaleDateString("pt-BR");
+  const headerLines = [
+    ASSOCIATION_NAME,
+    `Gerado em: ${generatedAt}`,
+    `Tipo: ${tipo}`,
+    `Mes de vigencia: ${mesLabel || "-"}`
+  ];
+  const csvLines = [
+    ...headerLines,
+    "",
+    columns.map(escapeCsvValue).join(";"),
+    ...rows.map((row) =>
+      rowMapper(row).map(escapeCsvValue).join(";")
+    )
+  ];
+  return csvLines.join("\n");
+}
+
+function buildReportPdf({ tipo, mesLabel, rows, columns, rowMapper }) {
+  const generatedAt = new Date().toLocaleDateString("pt-BR");
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const marginX = 40;
+  let cursorY = 48;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(ASSOCIATION_NAME, marginX, cursorY);
+  cursorY += 18;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Gerado em: ${generatedAt}`, marginX, cursorY);
+  cursorY += 14;
+  doc.text(`Tipo: ${tipo}`, marginX, cursorY);
+  cursorY += 14;
+  doc.text(`Mes de vigencia: ${mesLabel || "-"}`, marginX, cursorY);
+  cursorY += 18;
+
+  const bodyRows = rows.map((row) => rowMapper(row));
+  const emptyRow = new Array(columns.length).fill("");
+  if (emptyRow.length > 1) {
+    emptyRow[1] = "Nenhum registro";
+  }
+  doc.autoTable({
+    startY: cursorY,
+    head: [columns],
+    body: bodyRows.length ? bodyRows : [emptyRow],
+    styles: { fontSize: 9, cellPadding: 4, textColor: 40 },
+    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: {
+      [columns.length - 1]: { halign: "right" }
+    }
+  });
+
+  return doc.output("blob");
+}
+
+const MONTH_LABELS = [
+  "Janeiro",
+  "Fevereiro",
+  "Marco",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro"
+];
+
+function formatMonthYear(key) {
+  if (!key) return "";
+  const [year, month] = key.split("-");
+  const monthIndex = Number(month) - 1;
+  const label = MONTH_LABELS[monthIndex] || key;
+  return `${label} ${year || ""}`.trim();
+}
+
+function getDespesaMonthKey(row) {
+  const dateValue = row?.data_despesa || row?.created_at;
+  if (!dateValue) return "";
+  return String(dateValue).slice(0, 7);
 }
 
 function AdminLogin({ onLogin }) {
@@ -450,6 +568,983 @@ function AddAssociadoModal({ open, onClose, onSave }) {
           >
             Salvar
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DespesaModal({ open, onClose, form, onChange, onSave }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-card">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Cadastro
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              Nova despesa
+            </h2>
+          </div>
+          <button
+            className="text-sm text-slate-400 hover:text-slate-700"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium text-slate-600">
+              Data da despesa
+            </label>
+            <input
+              type="date"
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.data_despesa}
+              onChange={(event) => onChange("data_despesa", event.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">Valor</label>
+            <input
+              type="number"
+              step="0.01"
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.valor}
+              onChange={(event) => onChange("valor", event.target.value)}
+              placeholder="0,00"
+              required
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-slate-600">
+              Beneficiario
+            </label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.beneficiario}
+              onChange={(event) => onChange("beneficiario", event.target.value)}
+              placeholder="Fornecedor ou prestador"
+              required
+            />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-slate-600">
+              Descricao
+            </label>
+            <textarea
+              className="mt-2 min-h-[120px] w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.descricao}
+              onChange={(event) => onChange("descricao", event.target.value)}
+              placeholder="Detalhes da despesa"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            onClick={onSave}
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DespesasMonthModal({ open, onClose, monthKey, rows }) {
+  const [sortBy, setSortBy] = useState("data_desc");
+  const [reportUrl, setReportUrl] = useState("");
+  const [reportFileName, setReportFileName] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+  const sortedRows = useMemo(() => {
+    const list = [...rows];
+    switch (sortBy) {
+      case "valor_asc":
+        return list.sort((a, b) => Number(a.valor || 0) - Number(b.valor || 0));
+      case "valor_desc":
+        return list.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0));
+      case "data_asc":
+        return list.sort(
+          (a, b) =>
+            String(a.data_despesa || "").localeCompare(String(b.data_despesa || ""))
+        );
+      case "data_desc":
+      default:
+        return list.sort(
+          (a, b) =>
+            String(b.data_despesa || "").localeCompare(String(a.data_despesa || ""))
+        );
+    }
+  }, [rows, sortBy]);
+  const printDate = new Date().toLocaleDateString("pt-BR");
+  const monthLabel = formatMonthYear(monthKey);
+
+  useEffect(() => {
+    if (!open) return;
+    setReportBusy(true);
+    setReportUrl("");
+    const columns = ["Data", "Beneficiario", "Descricao", "Valor"];
+    const rowMapper = (row) => [
+      formatDateDisplay(row.data_despesa),
+      row.beneficiario || "-",
+      row.descricao || "-",
+      formatCurrency(row.valor)
+    ];
+    try {
+      const csvContent = buildReportCsv({
+        tipo: "Debito",
+        mesLabel: monthLabel,
+        rows: sortedRows,
+        columns,
+        rowMapper
+      });
+      void csvContent;
+      const pdfBlob = buildReportPdf({
+        tipo: "Debito",
+        mesLabel: monthLabel,
+        rows: sortedRows,
+        columns,
+        rowMapper
+      });
+      const url = URL.createObjectURL(pdfBlob);
+      setReportUrl((prev) => {
+        if (prev && prev !== url) {
+          URL.revokeObjectURL(prev);
+        }
+        return url;
+      });
+      const safeMonth = monthKey || "periodo";
+      setReportFileName(`relatorio-despesas-${safeMonth}.pdf`);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } finally {
+      setReportBusy(false);
+    }
+  }, [open, monthKey, monthLabel, sortedRows]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="flex max-h-[85vh] w-full max-w-4xl flex-col rounded-2xl bg-white p-6 shadow-card print-area">
+        <div className="print-only hidden mb-4 border-b border-slate-200 pb-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            Associacao de Moradores Jardim Tarraf II
+          </p>
+          <h2 className="mt-2 text-lg font-display text-slate-900">
+            Relatorio de Despesas - {formatMonthYear(monthKey)}
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Gerado em: {printDate}
+          </p>
+        </div>
+        <div className="print-only hidden">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-400">
+              <tr>
+                <th className="py-3 pr-4">Data</th>
+                <th className="py-3 pr-4">Beneficiario</th>
+                <th className="py-3 pr-4">Descricao</th>
+                <th className="py-3 pr-4 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sortedRows.length === 0 ? (
+                <tr>
+                  <td className="py-4 text-slate-500" colSpan={4}>
+                    Nenhuma despesa encontrada.
+                  </td>
+                </tr>
+              ) : (
+                sortedRows.map((row) => (
+                  <tr key={row.iddespesa} className="text-slate-700">
+                    <td className="py-3 pr-4">
+                      {formatDateDisplay(row.data_despesa)}
+                    </td>
+                    <td className="py-3 pr-4 font-medium text-slate-900">
+                      {row.beneficiario}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-500">
+                      {row.descricao || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                      {formatCurrency(row.valor)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Despesas do mes
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              {formatMonthYear(monthKey)}
+            </h2>
+            <p className="mt-2 text-xs text-slate-500">
+              Total:{" "}
+              <span className="font-semibold text-slate-700">
+                {formatCurrency(total)}
+              </span>{" "}
+              - Registros:{" "}
+              <span className="font-semibold text-slate-700">{rows.length}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {reportUrl ? (
+              <a
+                className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 no-print"
+                href={reportUrl}
+                download={reportFileName}
+              >
+                Baixar PDF
+              </a>
+            ) : (
+              <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400 no-print">
+                {reportBusy ? "Gerando PDF..." : "PDF indisponivel"}
+              </span>
+            )}
+            <button
+              className="text-sm text-slate-400 hover:text-slate-700 no-print"
+              onClick={onClose}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="uppercase tracking-[0.2em]">Ordenar</span>
+            <select
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 no-print"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="data_desc">Data (mais recente)</option>
+              <option value="data_asc">Data (mais antiga)</option>
+              <option value="valor_desc">Valor (maior)</option>
+              <option value="valor_asc">Valor (menor)</option>
+            </select>
+          </div>
+          <span className="no-print" />
+        </div>
+
+        <div className="mt-4 flex-1 overflow-y-auto print-scroll print-hide">
+          <div className="min-w-full overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-400">
+              <tr>
+                <th className="py-3 pr-4">Data</th>
+                <th className="py-3 pr-4">Beneficiario</th>
+                <th className="py-3 pr-4">Descricao</th>
+                <th className="py-3 pr-4 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+                {sortedRows.length === 0 ? (
+                  <tr>
+                    <td className="py-4 text-slate-500" colSpan={4}>
+                      Nenhuma despesa encontrada.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedRows.map((row) => (
+                    <tr key={row.iddespesa} className="text-slate-700">
+                      <td className="py-3 pr-4">
+                        {formatDateDisplay(row.data_despesa)}
+                    </td>
+                    <td className="py-3 pr-4 font-medium text-slate-900">
+                      {row.beneficiario}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-500">
+                      {row.descricao || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                      {formatCurrency(row.valor)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceitasMonthModal({ open, onClose, monthKey, rows, onSelect }) {
+  const [sortBy, setSortBy] = useState("data_desc");
+  const [filterBy, setFilterBy] = useState("todos");
+  const [reportUrl, setReportUrl] = useState("");
+  const [reportFileName, setReportFileName] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
+  const total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+  const matched = useMemo(
+    () => rows.filter((row) => row.match_status === "matched" || row.match_status === "importado"),
+    [rows]
+  );
+  const ambiguous = useMemo(
+    () => rows.filter((row) => row.match_status === "ambiguous"),
+    [rows]
+  );
+  const unmatched = useMemo(
+    () => rows.filter((row) => row.match_status === "unmatched"),
+    [rows]
+  );
+  const filteredRows = useMemo(() => {
+    switch (filterBy) {
+      case "ambiguous":
+        return ambiguous;
+      case "unmatched":
+        return unmatched;
+      case "matched":
+        return matched;
+      case "todos":
+      default:
+        return rows;
+    }
+  }, [ambiguous, unmatched, matched, rows, filterBy]);
+  const sortedRows = useMemo(() => {
+    const list = [...filteredRows];
+    switch (sortBy) {
+      case "valor_asc":
+        return list.sort((a, b) => Number(a.valor || 0) - Number(b.valor || 0));
+      case "valor_desc":
+        return list.sort((a, b) => Number(b.valor || 0) - Number(a.valor || 0));
+      case "data_asc":
+        return list.sort(
+          (a, b) =>
+            String(a.data_credito || "").localeCompare(String(b.data_credito || ""))
+        );
+      case "data_desc":
+      default:
+        return list.sort(
+          (a, b) =>
+            String(b.data_credito || "").localeCompare(String(a.data_credito || ""))
+        );
+    }
+  }, [filteredRows, sortBy]);
+  const printDate = new Date().toLocaleDateString("pt-BR");
+  const monthLabel = formatMonthYear(monthKey);
+
+  useEffect(() => {
+    if (!open) return;
+    setReportBusy(true);
+    setReportUrl("");
+    const columns = ["Data", "Pagador", "Descricao", "Associado", "Valor"];
+    const rowMapper = (row) => {
+      const candidatesLabel = row.candidatos?.length
+        ? row.candidatos
+            .map(
+              (cand) =>
+                `${cand.nome} (${Math.round((cand.score || 0) * 100)}%)`
+            )
+            .join(" | ")
+        : "";
+      let associadoLabel = row.associado_nome || "-";
+      if (row.match_status === "ambiguous") {
+        associadoLabel = candidatesLabel || "Ambiguo";
+      } else if (row.match_status === "unmatched") {
+        associadoLabel = "Nao encontrado";
+      }
+      return [
+        formatDateDisplay(row.data_credito),
+        row.pagador_nome || row.pagador_documento || "-",
+        row.descricao || "-",
+        associadoLabel,
+        formatCurrency(row.valor)
+      ];
+    };
+    try {
+      const csvContent = buildReportCsv({
+        tipo: "Credito",
+        mesLabel: monthLabel,
+        rows: sortedRows,
+        columns,
+        rowMapper
+      });
+      void csvContent;
+      const pdfBlob = buildReportPdf({
+        tipo: "Credito",
+        mesLabel: monthLabel,
+        rows: sortedRows,
+        columns,
+        rowMapper
+      });
+      const url = URL.createObjectURL(pdfBlob);
+      setReportUrl((prev) => {
+        if (prev && prev !== url) {
+          URL.revokeObjectURL(prev);
+        }
+        return url;
+      });
+      const safeMonth = monthKey || "periodo";
+      setReportFileName(`relatorio-creditos-${safeMonth}.pdf`);
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } finally {
+      setReportBusy(false);
+    }
+  }, [open, monthKey, monthLabel, sortedRows]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="flex max-h-[85vh] w-full max-w-5xl flex-col rounded-2xl bg-white p-6 shadow-card print-area">
+        <div className="print-only hidden mb-4 border-b border-slate-200 pb-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            Associacao de Moradores Jardim Tarraf II
+          </p>
+          <h2 className="mt-2 text-lg font-display text-slate-900">
+            Relatorio de Receitas - {formatMonthYear(monthKey)}
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Gerado em: {printDate}
+          </p>
+        </div>
+        <div className="print-only hidden">
+          <table className="min-w-full text-left text-sm">
+            <thead className="text-xs uppercase text-slate-400">
+              <tr>
+                <th className="py-3 pr-4">Data</th>
+                <th className="py-3 pr-4">Pagador</th>
+                <th className="py-3 pr-4">Descricao</th>
+                <th className="py-3 pr-4 text-right">Valor</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {sortedRows.length === 0 ? (
+                <tr>
+                  <td className="py-4 text-slate-500" colSpan={4}>
+                    Nenhum credito encontrado.
+                  </td>
+                </tr>
+              ) : (
+                sortedRows.map((row) => (
+                  <tr key={row.idcredito} className="text-slate-700">
+                    <td className="py-3 pr-4">
+                      {formatDateDisplay(row.data_credito)}
+                    </td>
+                    <td className="py-3 pr-4 font-medium text-slate-900">
+                      {row.pagador_nome || row.pagador_documento || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-500">
+                      {row.descricao || "-"}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                      {formatCurrency(row.valor)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Analise de creditos
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              {formatMonthYear(monthKey)}
+            </h2>
+            <p className="mt-2 text-xs text-slate-500">
+              Total:{" "}
+              <span className="font-semibold text-slate-700">
+                {formatCurrency(total)}
+              </span>{" "}
+              - Registros:{" "}
+              <span className="font-semibold text-slate-700">{rows.length}</span>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {reportUrl ? (
+              <a
+                className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 no-print"
+                href={reportUrl}
+                download={reportFileName}
+              >
+                Baixar PDF
+              </a>
+            ) : (
+              <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400 no-print">
+                {reportBusy ? "Gerando PDF..." : "PDF indisponivel"}
+              </span>
+            )}
+            <button
+              className="text-sm text-slate-400 hover:text-slate-700 no-print"
+              onClick={onClose}
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-3 no-print">
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+              Encontrados: {matched.length}
+            </span>
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+              Ambiguos: {ambiguous.length}
+            </span>
+            <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+              Nao encontrados: {unmatched.length}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 no-print">
+            {[
+              { id: "todos", label: "Todos" },
+              { id: "matched", label: "Encontrados" },
+              { id: "ambiguous", label: "Ambiguos" },
+              { id: "unmatched", label: "Nao encontrados" }
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                  filterBy === item.id
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+                onClick={() => setFilterBy(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 no-print">
+            <span className="uppercase tracking-[0.2em]">Ordenar</span>
+            <select
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 no-print"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value)}
+            >
+              <option value="data_desc">Data (mais recente)</option>
+              <option value="data_asc">Data (mais antiga)</option>
+              <option value="valor_desc">Valor (maior)</option>
+              <option value="valor_asc">Valor (menor)</option>
+            </select>
+          </div>
+          <span className="no-print" />
+        </div>
+
+        <div className="mt-4 flex-1 overflow-y-auto print-scroll print-hide">
+          <div className="min-w-full overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase text-slate-400">
+                <tr>
+                  <th className="py-3 pr-4">Data</th>
+                  <th className="py-3 pr-4">Pagador</th>
+                  <th className="py-3 pr-4">Descricao</th>
+                  <th className="py-3 pr-4">Associado</th>
+                  <th className="py-3 pr-4 print-hide">Status</th>
+                  <th className="py-3 pr-4 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {sortedRows.length === 0 ? (
+                  <tr>
+                    <td className="py-4 text-slate-500" colSpan={5}>
+                      Nenhum credito encontrado.
+                    </td>
+                  </tr>
+                ) : (
+                  sortedRows.map((row) => (
+                    <tr key={row.idcredito} className="text-slate-700">
+                      <td className="py-3 pr-4">
+                        {formatDateDisplay(row.data_credito)}
+                      </td>
+                      <td className="py-3 pr-4 font-medium text-slate-900">
+                        {row.pagador_nome || row.pagador_documento || "-"}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-500">
+                        {row.descricao || "-"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {row.match_status === "matched" ||
+                        row.match_status === "importado" ? (
+                          <span className="text-emerald-600">
+                            {row.associado_nome || "Encontrado"}
+                          </span>
+                        ) : row.candidatos?.length ? (
+                          <select
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs"
+                            onChange={(event) =>
+                              onSelect?.(row.idcredito, event.target.value)
+                            }
+                            defaultValue=""
+                          >
+                            <option value="" disabled>
+                              Selecionar
+                            </option>
+                            {row.candidatos.map((cand) => (
+                              <option key={cand.idinscrito} value={cand.idinscrito}>
+                                {cand.nome} ({Math.round(cand.score * 100)}%)
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-rose-600">Nao encontrado</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 print-hide">
+                        {row.match_status === "matched" || row.match_status === "importado" ? (
+                          <span className="text-emerald-600">Encontrado</span>
+                        ) : row.match_status === "ambiguous" ? (
+                          <span className="text-amber-600">Ambiguo</span>
+                        ) : (
+                          <span className="text-rose-600">Nao encontrado</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                        {formatCurrency(row.valor)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceitasImportModal({
+  open,
+  onClose,
+  onParse,
+  onImport,
+  onSelectMatch,
+  loading,
+  error,
+  rows,
+  fileName,
+  result
+}) {
+  const [file, setFile] = useState(null);
+  const matchedCount = rows.filter(
+    (row) => row.match_status === "matched" || row.match_status === "importado"
+  ).length;
+  const ambiguousCount = rows.filter((row) => row.match_status === "ambiguous").length;
+  const unmatchedCount = rows.filter((row) => row.match_status === "unmatched").length;
+
+  useEffect(() => {
+    if (!open) return;
+    setFile(null);
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="flex max-h-[85vh] w-full max-w-5xl flex-col rounded-2xl bg-white p-6 shadow-card">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Importacao
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              Importar creditos do extrato
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              O sistema tenta cruzar com associados e gera uma analise.
+            </p>
+          </div>
+          <button
+            className="text-sm text-slate-400 hover:text-slate-700"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3">
+          <input
+            type="file"
+            accept="application/pdf"
+            className="text-sm"
+            onChange={(event) => setFile(event.target.files?.[0] || null)}
+          />
+          {fileName ? (
+            <p className="text-xs text-slate-400">Arquivo: {fileName}</p>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => onParse(file)}
+              disabled={!file || loading}
+            >
+              {loading ? "Processando..." : "Analisar extrato"}
+            </button>
+            <button
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={onImport}
+              disabled={!rows.length || loading}
+            >
+              Importar mensalidades
+            </button>
+          </div>
+          {rows.length ? (
+            <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
+                Encontrados: {matchedCount}
+              </span>
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+                Ambiguos: {ambiguousCount}
+              </span>
+              <span className="rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                Nao encontrados: {unmatchedCount}
+              </span>
+            </div>
+          ) : null}
+          {result ? (
+            <p className="text-sm text-slate-600">
+              Importadas:{" "}
+              <span className="font-semibold text-slate-800">
+                {result.inserted ?? 0}
+              </span>{" "}
+              - Ignoradas:{" "}
+              <span className="font-semibold text-slate-800">
+                {result.skipped ?? 0}
+              </span>
+            </p>
+          ) : null}
+          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        </div>
+
+        <div className="mt-4 flex-1 overflow-y-auto">
+          <div className="min-w-full overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase text-slate-400">
+                <tr>
+                  <th className="py-3 pr-4">Data</th>
+                  <th className="py-3 pr-4">Pagador</th>
+                  <th className="py-3 pr-4">Descricao</th>
+                  <th className="py-3 pr-4">Associado</th>
+                  <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-4 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.length === 0 ? (
+                  <tr>
+                    <td className="py-4 text-slate-500" colSpan={6}>
+                      Nenhum credito carregado.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row) => (
+                    <tr key={row.idcredito} className="text-slate-700">
+                      <td className="py-3 pr-4">
+                        {formatDateDisplay(row.data_credito)}
+                      </td>
+                      <td className="py-3 pr-4 font-medium text-slate-900">
+                        {row.pagador_nome || row.pagador_documento || "-"}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-500">
+                        {row.descricao || "-"}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {row.match_status === "matched" || row.match_status === "importado" ? (
+                          <span className="text-emerald-600">
+                            {row.associado_nome || "Encontrado"}
+                          </span>
+                        ) : row.candidatos?.length ? (
+                          <select
+                            className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs"
+                            onChange={(event) =>
+                              onSelectMatch(row.idcredito, event.target.value)
+                            }
+                            defaultValue=""
+                          >
+                            <option value="" disabled>
+                              Selecionar
+                            </option>
+                            {row.candidatos.map((cand) => (
+                              <option key={cand.idinscrito} value={cand.idinscrito}>
+                                {cand.nome} ({Math.round(cand.score * 100)}%)
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-rose-600">Nao encontrado</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4">
+                        {row.match_status === "matched" || row.match_status === "importado" ? (
+                          <span className="text-emerald-600">Encontrado</span>
+                        ) : row.match_status === "ambiguous" ? (
+                          <span className="text-amber-600">Ambiguo</span>
+                        ) : (
+                          <span className="text-rose-600">Nao encontrado</span>
+                        )}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                        {formatCurrency(row.valor)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DespesasImportModal({
+  open,
+  onClose,
+  onParse,
+  onImport,
+  loading,
+  error,
+  rows,
+  fileName,
+  result
+}) {
+  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setFile(null);
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
+      <div className="flex max-h-[85vh] w-full max-w-4xl flex-col rounded-2xl bg-white p-6 shadow-card">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
+              Importacao
+            </p>
+            <h2 className="mt-2 text-xl font-display text-slate-900">
+              Importar extrato
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Envie o PDF do extrato para identificar as despesas.
+            </p>
+          </div>
+          <button
+            className="text-sm text-slate-400 hover:text-slate-700"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3">
+          <input
+            type="file"
+            accept="application/pdf"
+            className="text-sm"
+            onChange={(event) => setFile(event.target.files?.[0] || null)}
+          />
+          {fileName ? (
+            <p className="text-xs text-slate-400">Arquivo: {fileName}</p>
+          ) : null}
+          <div className="flex flex-wrap gap-3">
+            <button
+              className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => onParse(file)}
+              disabled={!file || loading}
+            >
+              {loading ? "Processando..." : "Analisar extrato"}
+            </button>
+            <button
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={onImport}
+              disabled={!rows.length || loading}
+            >
+              Importar despesas
+            </button>
+          </div>
+          {result ? (
+            <p className="text-sm text-slate-600">
+              Importadas:{" "}
+              <span className="font-semibold text-slate-800">
+                {result.inserted ?? 0}
+              </span>{" "}
+              - Ignoradas:{" "}
+              <span className="font-semibold text-slate-800">
+                {result.skipped ?? 0}
+              </span>
+            </p>
+          ) : null}
+          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+        </div>
+
+        <div className="mt-4 flex-1 overflow-y-auto">
+          <div className="min-w-full overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase text-slate-400">
+                <tr>
+                  <th className="py-3 pr-4">Data</th>
+                  <th className="py-3 pr-4">Beneficiario</th>
+                  <th className="py-3 pr-4">Descricao</th>
+                  <th className="py-3 pr-4 text-right">Valor</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.length === 0 ? (
+                  <tr>
+                    <td className="py-4 text-slate-500" colSpan={4}>
+                      Nenhuma despesa carregada.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row, index) => (
+                    <tr key={`${row.data_despesa}-${index}`} className="text-slate-700">
+                      <td className="py-3 pr-4">
+                        {formatDateDisplay(row.data_despesa)}
+                      </td>
+                      <td className="py-3 pr-4 font-medium text-slate-900">
+                        {row.beneficiario}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-500">
+                        {row.descricao || "-"}
+                      </td>
+                      <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                        {formatCurrency(row.valor)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1168,6 +2263,53 @@ function UserDashboard({ token, onLogout }) {
 
   return (
     <div className="min-h-screen">
+      <style>{`
+        @media print {
+          body {
+            background: #ffffff;
+          }
+          body * {
+            visibility: hidden;
+          }
+          .print-area,
+          .print-area * {
+            visibility: visible;
+          }
+          .no-print,
+          .print-hide {
+            display: none !important;
+          }
+          .print-area {
+            position: static !important;
+            max-height: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            display: block !important;
+          }
+          .print-scroll {
+            overflow: visible !important;
+            max-height: none !important;
+            flex: none !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          .print-only.hidden {
+            display: block !important;
+          }
+          table {
+            width: 100% !important;
+            font-size: 11px !important;
+          }
+          th, td {
+            padding: 6px 8px !important;
+            vertical-align: top !important;
+          }
+        }
+        .print-only {
+          display: none;
+        }
+      `}</style>
       <header className="relative overflow-hidden bg-blue-600 text-white">
         <div className="pointer-events-none absolute -left-20 top-0 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
         <div className="pointer-events-none absolute -right-24 -top-10 h-44 w-44 rounded-full bg-sky-300/30 blur-2xl" />
@@ -1442,6 +2584,7 @@ function UserDashboard({ token, onLogout }) {
 }
 
 function Dashboard({ token, onLogout }) {
+  const [adminTab, setAdminTab] = useState("resumo");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -1463,8 +2606,91 @@ function Dashboard({ token, onLogout }) {
     doacao: "",
     data_pagamento: ""
   });
+  const [despesasRows, setDespesasRows] = useState([]);
+  const [despesasLoading, setDespesasLoading] = useState(false);
+  const [despesasError, setDespesasError] = useState("");
+  const [despesasOpen, setDespesasOpen] = useState(false);
+  const [despesasForm, setDespesasForm] = useState({
+    data_despesa: "",
+    valor: "",
+    beneficiario: "",
+    descricao: ""
+  });
+  const [despesasMonthOpen, setDespesasMonthOpen] = useState(false);
+  const [despesasMonthKey, setDespesasMonthKey] = useState("");
+  const [despesasMonthRows, setDespesasMonthRows] = useState([]);
+  const [despesasImportOpen, setDespesasImportOpen] = useState(false);
+  const [despesasImportRows, setDespesasImportRows] = useState([]);
+  const [despesasImportLoading, setDespesasImportLoading] = useState(false);
+  const [despesasImportError, setDespesasImportError] = useState("");
+  const [despesasImportFileName, setDespesasImportFileName] = useState("");
+  const [despesasImportResult, setDespesasImportResult] = useState(null);
+  const [creditosRows, setCreditosRows] = useState([]);
+  const [creditosLoading, setCreditosLoading] = useState(false);
+  const [creditosError, setCreditosError] = useState("");
+  const [creditosImportOpen, setCreditosImportOpen] = useState(false);
+  const [creditosImportRows, setCreditosImportRows] = useState([]);
+  const [creditosImportLoading, setCreditosImportLoading] = useState(false);
+  const [creditosImportError, setCreditosImportError] = useState("");
+  const [creditosImportFileName, setCreditosImportFileName] = useState("");
+  const [creditosImportResult, setCreditosImportResult] = useState(null);
+  const [creditosMonthOpen, setCreditosMonthOpen] = useState(false);
+  const [creditosMonthKey, setCreditosMonthKey] = useState("");
+  const [creditosMonthRows, setCreditosMonthRows] = useState([]);
+  const [resumoMensal, setResumoMensal] = useState([]);
+  const [resumoLoading, setResumoLoading] = useState(false);
 
   const filteredSearch = useMemo(() => search.trim(), [search]);
+  const despesasSummary = useMemo(() => {
+    const map = new Map();
+    despesasRows.forEach((row) => {
+      const key = getDespesaMonthKey(row);
+      if (!key) return;
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          count: 0,
+          total: 0,
+          max: 0,
+          maxBeneficiario: ""
+        });
+      }
+      const entry = map.get(key);
+      const valorNum = Number(row.valor || 0);
+      entry.count += 1;
+      entry.total += valorNum;
+      if (valorNum > entry.max) {
+        entry.max = valorNum;
+        entry.maxBeneficiario = row.beneficiario || "";
+      }
+    });
+    return Array.from(map.values())
+      .map((entry) => ({
+        ...entry,
+        avg: entry.count ? entry.total / entry.count : 0
+      }))
+      .sort((a, b) => b.key.localeCompare(a.key));
+  }, [despesasRows]);
+  const despesasTotal = useMemo(
+    () => despesasRows.reduce((sum, row) => sum + Number(row.valor || 0), 0),
+    [despesasRows]
+  );
+  const despesasRecentes = useMemo(() => despesasRows.slice(0, 10), [despesasRows]);
+  const resumoCards = useMemo(() => resumoMensal.slice(0, 6), [resumoMensal]);
+
+  useEffect(() => {
+    if (adminTab !== "despesas") return;
+    loadDespesas();
+  }, [adminTab, token]);
+
+  useEffect(() => {
+    if (adminTab !== "receitas") return;
+    loadCreditos();
+  }, [adminTab, token]);
+
+  useEffect(() => {
+    loadResumoMensal();
+  }, [token]);
 
   useEffect(() => {
     let isActive = true;
@@ -1503,6 +2729,329 @@ function Dashboard({ token, onLogout }) {
       clearTimeout(handler);
     };
   }, [filteredSearch, statusFilter, token]);
+
+  async function loadDespesas() {
+    setDespesasLoading(true);
+    setDespesasError("");
+    try {
+      const response = await apiFetch("/api/despesas", {}, token);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar");
+      }
+      const data = await response.json();
+      setDespesasRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setDespesasError("Nao foi possivel carregar as despesas.");
+    } finally {
+      setDespesasLoading(false);
+    }
+  }
+
+  async function loadCreditos(month) {
+    setCreditosLoading(true);
+    setCreditosError("");
+    try {
+      const query = month ? `?month=${month}` : "";
+      const response = await apiFetch(`/api/creditos${query}`, {}, token);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar");
+      }
+      const data = await response.json();
+      if (month) {
+        setCreditosMonthRows(Array.isArray(data) ? data : []);
+      } else {
+        setCreditosRows(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setCreditosError("Nao foi possivel carregar os creditos.");
+    } finally {
+      setCreditosLoading(false);
+    }
+  }
+
+  async function loadResumoMensal() {
+    setResumoLoading(true);
+    try {
+      const response = await apiFetch("/api/resumo-mensal", {}, token);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar");
+      }
+      const data = await response.json();
+      setResumoMensal(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setResumoMensal([]);
+    } finally {
+      setResumoLoading(false);
+    }
+  }
+
+  function openDespesaModal() {
+    setDespesasForm({
+      data_despesa: formatDateInput(new Date()),
+      valor: "",
+      beneficiario: "",
+      descricao: ""
+    });
+    setDespesasOpen(true);
+  }
+
+  function updateDespesaField(field, value) {
+    setDespesasForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleCreateDespesa() {
+    const valorNum = Number(despesasForm.valor);
+    if (!despesasForm.data_despesa) {
+      setDespesasError("Informe a data da despesa.");
+      return;
+    }
+    if (!despesasForm.beneficiario.trim()) {
+      setDespesasError("Informe o beneficiario.");
+      return;
+    }
+    if (!Number.isFinite(valorNum) || valorNum < 0) {
+      setDespesasError("Informe um valor valido.");
+      return;
+    }
+    setDespesasLoading(true);
+    setDespesasError("");
+    try {
+      const response = await apiFetch(
+        "/api/despesas",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            data_despesa: despesasForm.data_despesa,
+            valor: valorNum,
+            beneficiario: despesasForm.beneficiario,
+            descricao: despesasForm.descricao
+          })
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao cadastrar despesa");
+      }
+      await loadDespesas();
+      setDespesasOpen(false);
+    } catch (err) {
+      setDespesasError(err.message || "Nao foi possivel cadastrar a despesa.");
+    } finally {
+      setDespesasLoading(false);
+    }
+  }
+
+  async function handleParseExtrato(file) {
+    if (!file) return;
+    setDespesasImportLoading(true);
+    setDespesasImportError("");
+    setDespesasImportRows([]);
+    setDespesasImportFileName(file.name);
+    setDespesasImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await apiUpload("/api/despesas/import", formData, token);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao processar o extrato");
+      }
+      const data = await response.json();
+      setDespesasImportRows(data.rows || []);
+    } catch (err) {
+      setDespesasImportError(err.message || "Nao foi possivel ler o extrato.");
+    } finally {
+      setDespesasImportLoading(false);
+    }
+  }
+
+  async function handleImportExtrato() {
+    if (!despesasImportRows.length) return;
+    setDespesasImportLoading(true);
+    setDespesasImportError("");
+    try {
+      const response = await apiFetch(
+        "/api/despesas/bulk",
+        {
+          method: "POST",
+          body: JSON.stringify({ rows: despesasImportRows })
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao importar despesas");
+      }
+      const data = await response.json();
+      setDespesasImportResult({
+        inserted: data.inserted ?? 0,
+        skipped: data.skipped ?? 0
+      });
+      await loadDespesas();
+      await loadResumoMensal();
+    } catch (err) {
+      setDespesasImportError(err.message || "Nao foi possivel importar as despesas.");
+    } finally {
+      setDespesasImportLoading(false);
+    }
+  }
+
+  async function handleParseCreditos(file) {
+    if (!file) return;
+    setCreditosImportLoading(true);
+    setCreditosImportError("");
+    setCreditosImportRows([]);
+    setCreditosImportFileName(file.name);
+    setCreditosImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await apiUpload("/api/creditos/import", formData, token);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao processar o extrato");
+      }
+      const data = await response.json();
+      const rows = data.rows || [];
+      setCreditosImportRows(rows);
+      const firstMonth = rows[0]?.data_credito?.slice(0, 7) || "";
+      if (firstMonth) {
+        setCreditosMonthKey(firstMonth);
+      }
+      await loadResumoMensal();
+    } catch (err) {
+      setCreditosImportError(err.message || "Nao foi possivel ler o extrato.");
+    } finally {
+      setCreditosImportLoading(false);
+    }
+  }
+
+  async function handleSelectCreditoMatch(idcredito, idinscrito) {
+    if (!idinscrito) return;
+    try {
+      const response = await apiFetch(
+        `/api/creditos/${idcredito}/match`,
+        {
+          method: "POST",
+          body: JSON.stringify({ idinscrito: Number(idinscrito) })
+        },
+        token
+      );
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar");
+      }
+      const data = await response.json().catch(() => ({}));
+      const matchedIds = Array.isArray(data.matched_ids)
+        ? data.matched_ids.map((item) => Number(item))
+        : [Number(idcredito)];
+      const resolvedName = (row) =>
+        row.candidatos?.find(
+          (cand) => String(cand.idinscrito) === String(idinscrito)
+        )?.nome || row.associado_nome || "Selecionado";
+      setCreditosImportRows((prev) =>
+        prev.map((row) =>
+          matchedIds.includes(Number(row.idcredito))
+            ? {
+                ...row,
+                match_status: "matched",
+                associado_nome: resolvedName(row)
+              }
+            : row
+        )
+      );
+      setCreditosMonthRows((prev) =>
+        prev.map((row) =>
+          matchedIds.includes(Number(row.idcredito))
+            ? {
+                ...row,
+                match_status: "matched",
+                associado_nome: resolvedName(row)
+              }
+            : row
+        )
+      );
+      setCreditosRows((prev) =>
+        prev.map((row) =>
+          matchedIds.includes(Number(row.idcredito))
+            ? {
+                ...row,
+                match_status: "matched",
+                associado_nome: resolvedName(row)
+              }
+            : row
+        )
+      );
+    } catch (err) {
+      setCreditosImportError("Nao foi possivel selecionar o associado.");
+    }
+  }
+
+  async function handleImportMensalidades(month) {
+    if (!month) {
+      setCreditosImportError("Selecione o mes para importar.");
+      return;
+    }
+    setCreditosImportLoading(true);
+    setCreditosImportError("");
+    try {
+      const response = await apiFetch(
+        "/api/creditos/importar",
+        {
+          method: "POST",
+          body: JSON.stringify({ month })
+        },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao importar mensalidades");
+      }
+      const data = await response.json();
+      setCreditosImportResult({
+        inserted: data.inserted ?? 0,
+        skipped: data.skipped ?? 0
+      });
+      await loadResumoMensal();
+      if (month) {
+        await loadCreditos(month);
+      } else {
+        await loadCreditos();
+      }
+    } catch (err) {
+      setCreditosImportError(err.message || "Nao foi possivel importar.");
+    } finally {
+      setCreditosImportLoading(false);
+    }
+  }
+
+  function openMonthDetails(key) {
+    setDespesasMonthKey(key);
+    setDespesasMonthRows([]);
+    setDespesasMonthOpen(true);
+    loadDespesasMonth(key);
+  }
+
+  async function loadDespesasMonth(key) {
+    if (!key) return;
+    try {
+      const response = await apiFetch(`/api/despesas?month=${key}`, {}, token);
+      if (!response.ok) {
+        throw new Error("Falha ao carregar");
+      }
+      const data = await response.json();
+      setDespesasMonthRows(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setDespesasMonthRows([]);
+    }
+  }
+
+  function openCreditosMonth(key) {
+    setCreditosMonthKey(key);
+    setCreditosMonthRows([]);
+    setCreditosMonthOpen(true);
+    loadCreditos(key);
+  }
 
   async function handleSave(form) {
     if (!form) return;
@@ -1693,126 +3242,418 @@ function Dashboard({ token, onLogout }) {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 shadow-card">
-          <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-r from-blue-100/80 via-sky-50 to-cyan-100/60" />
-          <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-display text-slate-900">Associados</h2>
-              <p className="mt-2 text-xs text-slate-500">
-                Total cadastrados:{" "}
-                <span className="font-semibold text-slate-700">{totalCount}</span>{" "}
-                - Resultado da busca:{" "}
-                <span className="font-semibold text-slate-700">{filteredCount}</span>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                Visao geral
               </p>
+              <h2 className="mt-2 text-xl font-display text-slate-900">
+                Resumo mensal
+              </h2>
             </div>
-            <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
-              <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                {[
-                  { id: "todos", label: "Todos" },
-                  { id: "adimplente", label: "Adimplentes" },
-                  { id: "inadimplente", label: "Inadimplentes" }
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`rounded-md px-3 py-2 ${
-                      statusFilter === item.id
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                    onClick={() => setStatusFilter(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <div className="relative w-full md:w-80">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                <input
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  placeholder="Buscar por nome, CPF ou rua"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </div>
-              <button
-                className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
-                onClick={() => setEnquetesOpen(true)}
-              >
-                Enquetes
-              </button>
-              <button
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                onClick={() => setAdding(true)}
-              >
-                Novo associado
-              </button>
-            </div>
+            {resumoLoading ? (
+              <span className="text-xs text-slate-400">Atualizando...</span>
+            ) : null}
           </div>
+          {resumoCards.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-500">
+              Nenhum resumo disponivel ainda.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {resumoCards.map((item) => (
+                <div
+                  key={item.mes}
+                  className="rounded-2xl border border-slate-100 bg-white p-5 shadow-card"
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    {formatMonthYear(item.mes)}
+                  </p>
+                  <div className="mt-4 grid gap-3 text-sm text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span>Receitas</span>
+                      <span className="font-semibold text-slate-800">
+                        {formatCurrency(item.creditos_total)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Despesas</span>
+                      <span className="font-semibold text-slate-800">
+                        {formatCurrency(item.despesas_total)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Creditos: {item.creditos_count}</span>
+                      <span>Despesas: {item.despesas_count}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+                      onClick={() => openCreditosMonth(item.mes)}
+                    >
+                      Analise de creditos
+                    </button>
+                    <button
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                      onClick={() => openMonthDetails(item.mes)}
+                    >
+                      Despesas
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase text-slate-400">
-                <tr>
-                  <th className="py-3 pr-4">Nome</th>
-                  <th className="py-3 pr-4">CPF</th>
-                  <th className="py-3 pr-4">Rua</th>
-                  <th className="py-3 pr-4">Numero</th>
-                  <th className="py-3 pr-4">Telefone</th>
-                  <th className="py-3 pr-4">Total pago</th>
-                  <th className="py-3 pr-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr>
-                    <td className="py-4 text-slate-500" colSpan={7}>
-                      Carregando...
-                    </td>
-                  </tr>
-                ) : rows.length === 0 ? (
-                  <tr>
-                    <td className="py-4 text-slate-500" colSpan={7}>
-                      Nenhum inscrito encontrado.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((row) => (
-                    <tr key={row.idinscritos} className="text-slate-700">
-                      <td className="py-3 pr-4 font-medium text-slate-900">
-                        {row.nome}
-                      </td>
-                      <td className="py-3 pr-4">{row.cpf}</td>
-                      <td className="py-3 pr-4">{row.rua}</td>
-                      <td className="py-3 pr-4">{row.numero}</td>
-                      <td className="py-3 pr-4">{row.telefone}</td>
-                    <td className="py-3 pr-4">{formatCurrency(row.total_pago)}</td>
-                      <td className="py-3 pr-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                            onClick={() => handleOpenMensalidades(row)}
-                          >
-                            Mensalidades
-                          </button>
-                          <button
-                            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
-                            onClick={() => setEditing(row)}
-                          >
-                            <PencilLine size={14} />
-                            Editar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+              Administrativo
+            </p>
+            <h2 className="mt-2 text-2xl font-display text-slate-900">
+              Painel da associacao
+            </h2>
+          </div>
+          <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {[
+                { id: "resumo", label: "Resumo" },
+                { id: "associados", label: "Associados" },
+                { id: "despesas", label: "Despesas" },
+                { id: "receitas", label: "Receitas" }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`rounded-md px-3 py-2 ${
+                    adminTab === item.id
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                  onClick={() => setAdminTab(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            {adminTab === "despesas" ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  onClick={() => setDespesasImportOpen(true)}
+                >
+                  Importar extrato
+                </button>
+                <button
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  onClick={openDespesaModal}
+                >
+                  Nova despesa
+                </button>
+              </div>
+            ) : adminTab === "receitas" ? (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  onClick={() => setCreditosImportOpen(true)}
+                >
+                  Importar extrato
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
+
+        {adminTab === "associados" ? (
+          <div className="relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 shadow-card">
+            <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-r from-blue-100/80 via-sky-50 to-cyan-100/60" />
+            <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-display text-slate-900">Associados</h2>
+                <p className="mt-2 text-xs text-slate-500">
+                  Total cadastrados:{" "}
+                  <span className="font-semibold text-slate-700">{totalCount}</span>{" "}
+                  - Resultado da busca:{" "}
+                  <span className="font-semibold text-slate-700">{filteredCount}</span>
+                </p>
+              </div>
+              <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:items-center">
+                <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  {[
+                    { id: "todos", label: "Todos" },
+                    { id: "adimplente", label: "Adimplentes" },
+                    { id: "inadimplente", label: "Inadimplentes" }
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`rounded-md px-3 py-2 ${
+                        statusFilter === item.id
+                          ? "bg-white text-slate-900 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                      onClick={() => setStatusFilter(item.id)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative w-full md:w-80">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <input
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="Buscar por nome, CPF ou rua"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+                </div>
+                <button
+                  className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  onClick={() => setEnquetesOpen(true)}
+                >
+                  Enquetes
+                </button>
+                <button
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  onClick={() => setAdding(true)}
+                >
+                  Novo associado
+                </button>
+              </div>
+            </div>
+
+            {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead className="text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="py-3 pr-4">Nome</th>
+                    <th className="py-3 pr-4">CPF</th>
+                    <th className="py-3 pr-4">Rua</th>
+                    <th className="py-3 pr-4">Numero</th>
+                    <th className="py-3 pr-4">Telefone</th>
+                    <th className="py-3 pr-4">Total pago</th>
+                    <th className="py-3 pr-4"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
+                    <tr>
+                      <td className="py-4 text-slate-500" colSpan={7}>
+                        Carregando...
+                      </td>
+                    </tr>
+                  ) : rows.length === 0 ? (
+                    <tr>
+                      <td className="py-4 text-slate-500" colSpan={7}>
+                        Nenhum inscrito encontrado.
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((row) => (
+                      <tr key={row.idinscritos} className="text-slate-700">
+                        <td className="py-3 pr-4 font-medium text-slate-900">
+                          {row.nome}
+                        </td>
+                        <td className="py-3 pr-4">{row.cpf}</td>
+                        <td className="py-3 pr-4">{row.rua}</td>
+                        <td className="py-3 pr-4">{row.numero}</td>
+                        <td className="py-3 pr-4">{row.telefone}</td>
+                        <td className="py-3 pr-4">
+                          {formatCurrency(row.total_pago)}
+                        </td>
+                        <td className="py-3 pr-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                              onClick={() => handleOpenMensalidades(row)}
+                            >
+                              Mensalidades
+                            </button>
+                            <button
+                              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+                              onClick={() => setEditing(row)}
+                            >
+                              <PencilLine size={14} />
+                              Editar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : adminTab === "despesas" ? (
+          <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6 shadow-card">
+            <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-r from-blue-100/80 via-sky-50 to-cyan-100/60" />
+            <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-display text-slate-900">Despesas</h2>
+                <p className="mt-2 text-xs text-slate-500">
+                  Total geral:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {formatCurrency(despesasTotal)}
+                  </span>{" "}
+                  - Registros:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {despesasRows.length}
+                  </span>
+                </p>
+              </div>
+            </div>
+
+            {despesasError ? (
+              <p className="text-sm text-rose-600">{despesasError}</p>
+            ) : null}
+
+            {despesasLoading ? (
+              <p className="text-sm text-slate-500">Carregando...</p>
+            ) : despesasRows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Nenhuma despesa cadastrada ainda.
+              </p>
+            ) : null}
+
+            <div className="mt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Ultimas despesas
+                </h3>
+                <button
+                  className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 hover:text-blue-600"
+                  onClick={loadDespesas}
+                >
+                  Atualizar
+                </button>
+              </div>
+              <div className="mt-3 overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase text-slate-400">
+                    <tr>
+                      <th className="py-3 pr-4">Data</th>
+                      <th className="py-3 pr-4">Beneficiario</th>
+                      <th className="py-3 pr-4">Descricao</th>
+                      <th className="py-3 pr-4 text-right">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {despesasRecentes.length === 0 ? (
+                      <tr>
+                        <td className="py-4 text-slate-500" colSpan={4}>
+                          Nenhuma despesa encontrada.
+                        </td>
+                      </tr>
+                    ) : (
+                      despesasRecentes.map((row) => (
+                        <tr key={row.iddespesa} className="text-slate-700">
+                          <td className="py-3 pr-4">
+                            {formatDateDisplay(row.data_despesa)}
+                          </td>
+                          <td className="py-3 pr-4 font-medium text-slate-900">
+                            {row.beneficiario}
+                          </td>
+                          <td className="py-3 pr-4 text-slate-500">
+                            {row.descricao || "-"}
+                          </td>
+                          <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                            {formatCurrency(row.valor)}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : adminTab === "receitas" ? (
+          <div className="relative flex flex-col gap-6 overflow-hidden rounded-2xl bg-white p-6 shadow-card">
+            <div className="pointer-events-none absolute inset-x-0 -top-16 h-32 bg-gradient-to-r from-blue-100/80 via-sky-50 to-cyan-100/60" />
+            <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-display text-slate-900">Receitas</h2>
+                <p className="mt-2 text-xs text-slate-500">
+                  Creditos analisados:{" "}
+                  <span className="font-semibold text-slate-700">
+                    {creditosRows.length}
+                  </span>
+                </p>
+              </div>
+              <button
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+                onClick={() =>
+                  handleImportMensalidades(
+                    creditosMonthKey || resumoCards?.[0]?.mes || ""
+                  )
+                }
+                disabled={creditosImportLoading}
+              >
+                Importar mensalidades do mes
+              </button>
+            </div>
+
+            {creditosError ? (
+              <p className="text-sm text-rose-600">{creditosError}</p>
+            ) : null}
+
+            {creditosLoading ? (
+              <p className="text-sm text-slate-500">Carregando...</p>
+            ) : creditosRows.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Nenhum credito analisado ainda.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="text-xs uppercase text-slate-400">
+                    <tr>
+                      <th className="py-3 pr-4">Data</th>
+                      <th className="py-3 pr-4">Pagador</th>
+                      <th className="py-3 pr-4">Descricao</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4 text-right">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {creditosRows.map((row) => (
+                      <tr key={row.idcredito} className="text-slate-700">
+                        <td className="py-3 pr-4">
+                          {formatDateDisplay(row.data_credito)}
+                        </td>
+                        <td className="py-3 pr-4 font-medium text-slate-900">
+                          {row.pagador_nome || row.pagador_documento || "-"}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-500">
+                          {row.descricao || "-"}
+                        </td>
+                        <td className="py-3 pr-4">
+                          {row.match_status === "matched" ||
+                          row.match_status === "importado" ? (
+                            <span className="text-emerald-600">Encontrado</span>
+                          ) : row.match_status === "ambiguous" ? (
+                            <span className="text-amber-600">Ambiguo</span>
+                          ) : (
+                            <span className="text-rose-600">Nao encontrado</span>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4 text-right font-semibold text-slate-700">
+                          {formatCurrency(row.valor)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        ) : null}
       </main>
 
       <EditModal
@@ -1830,6 +3671,49 @@ function Dashboard({ token, onLogout }) {
         open={enquetesOpen}
         onClose={() => setEnquetesOpen(false)}
         token={token}
+      />
+      <DespesaModal
+        open={despesasOpen}
+        onClose={() => setDespesasOpen(false)}
+        form={despesasForm}
+        onChange={updateDespesaField}
+        onSave={handleCreateDespesa}
+      />
+      <DespesasMonthModal
+        open={despesasMonthOpen}
+        onClose={() => setDespesasMonthOpen(false)}
+        monthKey={despesasMonthKey}
+        rows={despesasMonthRows}
+      />
+      <ReceitasMonthModal
+        open={creditosMonthOpen}
+        onClose={() => setCreditosMonthOpen(false)}
+        monthKey={creditosMonthKey}
+        rows={creditosMonthRows}
+        onSelect={handleSelectCreditoMatch}
+      />
+      <DespesasImportModal
+        open={despesasImportOpen}
+        onClose={() => setDespesasImportOpen(false)}
+        onParse={handleParseExtrato}
+        onImport={handleImportExtrato}
+        loading={despesasImportLoading}
+        error={despesasImportError}
+        rows={despesasImportRows}
+        fileName={despesasImportFileName}
+        result={despesasImportResult}
+      />
+      <ReceitasImportModal
+        open={creditosImportOpen}
+        onClose={() => setCreditosImportOpen(false)}
+        onParse={handleParseCreditos}
+        onImport={() => handleImportMensalidades(creditosMonthKey || resumoCards?.[0]?.mes)}
+        onSelectMatch={handleSelectCreditoMatch}
+        loading={creditosImportLoading}
+        error={creditosImportError}
+        rows={creditosImportRows}
+        fileName={creditosImportFileName}
+        result={creditosImportResult}
       />
       <MensalidadesModal
         open={mensalidadesOpen}
