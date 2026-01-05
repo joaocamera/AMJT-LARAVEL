@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import fs from "fs/promises";
 import os from "os";
+import path from "path";
 import { promisify } from "util";
 import { execFile } from "child_process";
 import multer from "multer";
@@ -18,6 +19,15 @@ const upload = multer({
   dest: os.tmpdir(),
   limits: {
     fileSize: 10 * 1024 * 1024
+  }
+});
+const uploadsRoot = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
+const despesasUploadDir = path.join(uploadsRoot, "despesas");
+const despesasUpload = multer({
+  dest: os.tmpdir(),
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+    files: 4
   }
 });
 
@@ -36,6 +46,11 @@ function formatCompetencia(date) {
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(uploadsRoot));
+
+fs.mkdir(despesasUploadDir, { recursive: true }).catch((err) => {
+  console.error("Falha ao criar diretorio de anexos:", err);
+});
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
@@ -113,6 +128,57 @@ function createDespesaHash({ data_despesa, valor, beneficiario, descricao }) {
     String(descricao || "")
   ].join("|");
   return crypto.createHash("sha256").update(payload).digest("hex");
+}
+
+function parseRemoveAnexos(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => Number(item)).filter((item) => Number.isFinite(item));
+    }
+  } catch (err) {
+    return [];
+  }
+  return [];
+}
+
+async function listDespesaAnexos(ids) {
+  if (!ids.length) return new Map();
+  const placeholders = ids.map(() => "?").join(", ");
+  const [rows] = await pool.query(
+    `SELECT idanexo, iddespesa, nome_original, nome_armazenado, mime_type, tamanho FROM despesas_anexos WHERE iddespesa IN (${placeholders}) ORDER BY idanexo ASC`,
+    ids
+  );
+  const map = new Map();
+  rows.forEach((row) => {
+    const list = map.get(row.iddespesa) || [];
+    list.push({
+      id: row.idanexo,
+      nome: row.nome_original,
+      url: `/uploads/despesas/${row.nome_armazenado}`,
+      mimeType: row.mime_type,
+      tamanho: row.tamanho
+    });
+    map.set(row.iddespesa, list);
+  });
+  return map;
+}
+
+async function storeDespesaAnexoFile(file) {
+  const ext = path.extname(file.originalname || "").slice(0, 10);
+  const storedName = `${crypto.randomUUID()}${ext}`;
+  const destPath = path.join(despesasUploadDir, storedName);
+  await fs.rename(file.path, destPath);
+  return {
+    storedName,
+    originalName: file.originalname || storedName,
+    mimeType: file.mimetype || "application/octet-stream",
+    size: file.size || 0
+  };
 }
 
 function createCreditoHash({ data_credito, valor, pagador_nome, pagador_documento, descricao }) {
@@ -252,6 +318,12 @@ function normalizeName(value) {
     .toUpperCase();
 }
 
+function normalizeDocument(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .trim();
+}
+
 function getMiddleSixDigits(value) {
   const digits = String(value || "").replace(/\D/g, "");
   if (digits.length === 6) return digits;
@@ -353,7 +425,18 @@ function parseStatementCredits(text) {
     .filter((row) => row.valor > 0 && row.data_credito);
 }
 
-function computeMatchCandidates(credit, inscritos) {
+function computeMatchCandidates(credit, inscritos, manualMap) {
+  const creditName = normalizeName(credit.pagador_nome);
+  const creditDoc = normalizeDocument(credit.pagador_documento);
+  const mapKey = `${creditName}|${creditDoc}`;
+  if (manualMap?.has(mapKey)) {
+    return {
+      status: "matched",
+      idinscrito: manualMap.get(mapKey),
+      candidates: [],
+      origin: "manual"
+    };
+  }
   const docKey = getMiddleSixDigits(credit.pagador_documento);
   const cpfMatches = docKey
     ? inscritos.filter((item) => item.cpfMiddle && item.cpfMiddle === docKey)
@@ -362,7 +445,8 @@ function computeMatchCandidates(credit, inscritos) {
     return {
       status: "matched",
       idinscrito: cpfMatches[0].idinscritos,
-      candidates: []
+      candidates: [],
+      origin: "auto"
     };
   }
   if (cpfMatches.length > 1) {
@@ -374,13 +458,13 @@ function computeMatchCandidates(credit, inscritos) {
         nome: item.nome,
         score: 1,
         origem: "cpf"
-      }))
+      })),
+      origin: "auto"
     };
   }
 
-  const creditName = normalizeName(credit.pagador_nome);
   if (!creditName) {
-    return { status: "unmatched", idinscrito: null, candidates: [] };
+    return { status: "unmatched", idinscrito: null, candidates: [], origin: "auto" };
   }
   const creditTokens = creditName.split(" ").filter((token) => token.length >= 3);
   const nameMatches = inscritos
@@ -399,7 +483,8 @@ function computeMatchCandidates(credit, inscritos) {
     return {
       status: "matched",
       idinscrito: nameMatches[0].idinscrito,
-      candidates: []
+      candidates: [],
+      origin: "auto"
     };
   }
   if (nameMatches.length > 1) {
@@ -411,10 +496,11 @@ function computeMatchCandidates(credit, inscritos) {
         nome: inscritos.find((row) => row.idinscritos === item.idinscrito)?.nome,
         score: item.score,
         origem: "nome"
-      }))
+      })),
+      origin: "auto"
     };
   }
-  return { status: "unmatched", idinscrito: null, candidates: [] };
+  return { status: "unmatched", idinscrito: null, candidates: [], origin: "auto" };
 }
 
 async function fetchEnquetes({ statusList, userId }) {
@@ -800,54 +886,217 @@ app.get("/api/despesas", requireAuth, async (req, res) => {
         `FROM despesas ${where} ORDER BY data_despesa DESC, iddespesa DESC`,
       params
     );
-    res.json(rows);
+    const anexosMap = await listDespesaAnexos(rows.map((row) => row.iddespesa));
+    res.json(
+      rows.map((row) => ({
+        ...row,
+        anexos: anexosMap.get(row.iddespesa) || []
+      }))
+    );
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar despesas" });
   }
 });
 
-app.post("/api/despesas", requireAuth, async (req, res) => {
-  const { data_despesa, valor, beneficiario, descricao } = req.body || {};
-  const valorNum = Number(valor);
-  if (!data_despesa) {
-    res.status(400).json({ error: "Data da despesa e obrigatoria" });
-    return;
-  }
-  if (!beneficiario || !String(beneficiario).trim()) {
-    res.status(400).json({ error: "Beneficiario e obrigatorio" });
-    return;
-  }
-  if (!Number.isFinite(valorNum) || valorNum < 0) {
-    res.status(400).json({ error: "Valor deve ser um numero valido" });
-    return;
-  }
-  const hash = createDespesaHash({
-    data_despesa,
-    valor: valorNum,
-    beneficiario,
-    descricao
-  });
-  try {
-    const [result] = await pool.query(
-      "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, hash, created_at, updated_at) " +
-        "VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-      [data_despesa, valorNum, String(beneficiario).trim(), descricao || null, hash]
-    );
-    res.status(201).json({
-      iddespesa: result.insertId,
-      data_despesa,
-      valor: valorNum,
-      beneficiario: String(beneficiario).trim(),
-      descricao: descricao || null
-    });
-  } catch (err) {
-    if (err?.code === "ER_DUP_ENTRY") {
-      res.status(409).json({ error: "Despesa ja cadastrada" });
+app.post(
+  "/api/despesas",
+  requireAuth,
+  (req, res, next) => {
+    if (!req.is("multipart/form-data")) {
+      next();
       return;
     }
-    res.status(500).json({ error: "Erro ao cadastrar despesa" });
+    despesasUpload.array("anexos", 4)(req, res, next);
+  },
+  async (req, res) => {
+    const { data_despesa, valor, beneficiario, descricao } = req.body || {};
+    const files = Array.isArray(req.files) ? req.files : [];
+    const valorNum = Number(valor);
+    if (!data_despesa) {
+      res.status(400).json({ error: "Data da despesa e obrigatoria" });
+      return;
+    }
+    if (!beneficiario || !String(beneficiario).trim()) {
+      res.status(400).json({ error: "Beneficiario e obrigatorio" });
+      return;
+    }
+    if (!Number.isFinite(valorNum) || valorNum < 0) {
+      res.status(400).json({ error: "Valor deve ser um numero valido" });
+      return;
+    }
+    if (files.length > 4) {
+      res.status(400).json({ error: "Maximo de 4 anexos por despesa" });
+      return;
+    }
+    const hash = createDespesaHash({
+      data_despesa,
+      valor: valorNum,
+      beneficiario,
+      descricao
+    });
+    let insertedId = null;
+    const storedFiles = [];
+    try {
+      const [result] = await pool.query(
+        "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, hash, created_at, updated_at) " +
+          "VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
+        [data_despesa, valorNum, String(beneficiario).trim(), descricao || null, hash]
+      );
+      insertedId = result.insertId;
+      for (const file of files) {
+        const stored = await storeDespesaAnexoFile(file);
+        storedFiles.push(stored);
+      }
+      if (storedFiles.length) {
+        const values = storedFiles.map((stored) => [
+          insertedId,
+          stored.originalName,
+          stored.storedName,
+          stored.mimeType,
+          stored.size
+        ]);
+        await pool.query(
+          "INSERT INTO despesas_anexos (iddespesa, nome_original, nome_armazenado, mime_type, tamanho) VALUES ?",
+          [values]
+        );
+      }
+      res.status(201).json({
+        iddespesa: insertedId,
+        data_despesa,
+        valor: valorNum,
+        beneficiario: String(beneficiario).trim(),
+        descricao: descricao || null,
+        anexos: storedFiles.map((stored) => ({
+          nome: stored.originalName,
+          url: `/uploads/despesas/${stored.storedName}`,
+          mimeType: stored.mimeType,
+          tamanho: stored.size
+        }))
+      });
+    } catch (err) {
+      if (insertedId) {
+        await pool.query("DELETE FROM despesas WHERE iddespesa = ?", [insertedId]);
+      }
+      await Promise.all(
+        storedFiles.map((stored) =>
+          fs.unlink(path.join(despesasUploadDir, stored.storedName)).catch(() => null)
+        )
+      );
+      if (err?.code === "ER_DUP_ENTRY") {
+        res.status(409).json({ error: "Despesa ja cadastrada" });
+        return;
+      }
+      res.status(500).json({ error: "Erro ao cadastrar despesa" });
+    }
   }
-});
+);
+
+app.put(
+  "/api/despesas/:id",
+  requireAuth,
+  (req, res, next) => {
+    if (!req.is("multipart/form-data")) {
+      next();
+      return;
+    }
+    despesasUpload.array("anexos", 4)(req, res, next);
+  },
+  async (req, res) => {
+    const { id } = req.params;
+    const { data_despesa, valor, beneficiario, descricao, removeAnexos } = req.body || {};
+    const files = Array.isArray(req.files) ? req.files : [];
+    const valorNum = Number(valor);
+    if (!data_despesa) {
+      res.status(400).json({ error: "Data da despesa e obrigatoria" });
+      return;
+    }
+    if (!beneficiario || !String(beneficiario).trim()) {
+      res.status(400).json({ error: "Beneficiario e obrigatorio" });
+      return;
+    }
+    if (!Number.isFinite(valorNum) || valorNum < 0) {
+      res.status(400).json({ error: "Valor deve ser um numero valido" });
+      return;
+    }
+    if (files.length > 4) {
+      res.status(400).json({ error: "Maximo de 4 anexos por despesa" });
+      return;
+    }
+    try {
+      const [rows] = await pool.query(
+        "SELECT iddespesa FROM despesas WHERE iddespesa = ? AND deleted_at IS NULL",
+        [id]
+      );
+      if (!rows.length) {
+        res.status(404).json({ error: "Despesa nao encontrada" });
+        return;
+      }
+      const [currentAnexos] = await pool.query(
+        "SELECT idanexo, nome_armazenado FROM despesas_anexos WHERE iddespesa = ?",
+        [id]
+      );
+      const removeIds = parseRemoveAnexos(removeAnexos);
+      const removeSet = new Set(removeIds);
+      const anexosToRemove = currentAnexos.filter((row) => removeSet.has(row.idanexo));
+      const remainingCount = currentAnexos.length - anexosToRemove.length;
+      if (remainingCount + files.length > 4) {
+        res.status(400).json({ error: "Maximo de 4 anexos por despesa" });
+        return;
+      }
+      const hash = createDespesaHash({
+        data_despesa,
+        valor: valorNum,
+        beneficiario,
+        descricao
+      });
+      await pool.query(
+        "UPDATE despesas SET data_despesa = ?, valor = ?, beneficiario = ?, descricao = ?, hash = ?, updated_at = NOW() WHERE iddespesa = ? AND deleted_at IS NULL",
+        [data_despesa, valorNum, String(beneficiario).trim(), descricao || null, hash, id]
+      );
+      if (anexosToRemove.length) {
+        const placeholders = anexosToRemove.map(() => "?").join(", ");
+        await pool.query(
+          `DELETE FROM despesas_anexos WHERE iddespesa = ? AND idanexo IN (${placeholders})`,
+          [id, ...anexosToRemove.map((row) => row.idanexo)]
+        );
+        await Promise.all(
+          anexosToRemove.map((row) =>
+            fs.unlink(path.join(despesasUploadDir, row.nome_armazenado)).catch(() => null)
+          )
+        );
+      }
+      const storedFiles = [];
+      for (const file of files) {
+        const stored = await storeDespesaAnexoFile(file);
+        storedFiles.push(stored);
+      }
+      if (storedFiles.length) {
+        const values = storedFiles.map((stored) => [
+          id,
+          stored.originalName,
+          stored.storedName,
+          stored.mimeType,
+          stored.size
+        ]);
+        await pool.query(
+          "INSERT INTO despesas_anexos (iddespesa, nome_original, nome_armazenado, mime_type, tamanho) VALUES ?",
+          [values]
+        );
+      }
+      const anexosMap = await listDespesaAnexos([Number(id)]);
+      res.json({
+        iddespesa: Number(id),
+        data_despesa,
+        valor: valorNum,
+        beneficiario: String(beneficiario).trim(),
+        descricao: descricao || null,
+        anexos: anexosMap.get(Number(id)) || []
+      });
+    } catch (err) {
+      res.status(500).json({ error: "Erro ao atualizar despesa" });
+    }
+  }
+);
 
 app.delete("/api/despesas/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
@@ -936,7 +1185,7 @@ app.get("/api/creditos", requireAuth, async (req, res) => {
     }
     const [rows] = await pool.query(
       "SELECT c.idcredito, c.data_credito, c.valor, c.pagador_nome, c.pagador_documento, c.descricao, " +
-        "c.match_status, c.idinscrito, c.idmensalidade, c.created_at " +
+        "c.match_status, c.match_origin, c.idinscrito, c.idmensalidade, c.created_at " +
         `FROM creditos c ${where} ORDER BY c.data_credito DESC, c.idcredito DESC`,
       params
     );
@@ -995,6 +1244,12 @@ app.post("/api/creditos/import", requireAuth, upload.single("file"), async (req,
     const [inscritosRows] = await pool.query(
       "SELECT idinscritos, nome, cpf FROM inscritos"
     );
+    const [manualRows] = await pool.query(
+      "SELECT idinscrito, nome_norm, doc_norm FROM creditos_match_map"
+    );
+    const manualMap = new Map(
+      manualRows.map((row) => [`${row.nome_norm}|${row.doc_norm}`, row.idinscrito])
+    );
     const inscritos = inscritosRows.map((item) => {
       const nomeNorm = normalizeName(item.nome);
       return {
@@ -1017,11 +1272,12 @@ app.post("/api/creditos/import", requireAuth, upload.single("file"), async (req,
     const importId = importResult.insertId;
     const responseRows = [];
     for (const row of rows) {
-      const matchInfo = computeMatchCandidates(row, inscritos);
+      const matchInfo = computeMatchCandidates(row, inscritos, manualMap);
+      const matchOrigin = matchInfo.origin || "auto";
       const hash = createCreditoHash(row);
       const [result] = await pool.query(
-        "INSERT INTO creditos (idimport, data_credito, valor, pagador_nome, pagador_documento, descricao, hash, match_status, idinscrito, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) " +
+        "INSERT INTO creditos (idimport, data_credito, valor, pagador_nome, pagador_documento, descricao, hash, match_status, match_origin, idinscrito, created_at, updated_at) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW()) " +
           "ON DUPLICATE KEY UPDATE idcredito = LAST_INSERT_ID(idcredito), updated_at = updated_at",
         [
           importId,
@@ -1032,6 +1288,7 @@ app.post("/api/creditos/import", requireAuth, upload.single("file"), async (req,
           row.descricao || null,
           hash,
           matchInfo.status,
+          matchOrigin,
           matchInfo.idinscrito
         ]
       );
@@ -1054,6 +1311,7 @@ app.post("/api/creditos/import", requireAuth, upload.single("file"), async (req,
         idcredito,
         ...row,
         match_status: matchInfo.status,
+        match_origin: matchOrigin,
         idinscrito: matchInfo.idinscrito,
         associado_nome: matchInfo.idinscrito ? inscritoById[matchInfo.idinscrito] : null,
         candidatos: matchInfo.candidates || []
@@ -1089,7 +1347,7 @@ app.post("/api/creditos/:id/match", requireAuth, async (req, res) => {
     }
     const { pagador_nome, pagador_documento } = rows[0];
     const [result] = await pool.query(
-      "UPDATE creditos SET idinscrito = ?, match_status = 'matched', updated_at = NOW() WHERE idcredito = ?",
+      "UPDATE creditos SET idinscrito = ?, match_status = 'matched', match_origin = 'auto', updated_at = NOW() WHERE idcredito = ?",
       [idinscrito, id]
     );
     if (result.affectedRows === 0) {
@@ -1097,7 +1355,7 @@ app.post("/api/creditos/:id/match", requireAuth, async (req, res) => {
       return;
     }
     const [bulkResult] = await pool.query(
-      "UPDATE creditos SET idinscrito = ?, match_status = 'matched', updated_at = NOW() " +
+      "UPDATE creditos SET idinscrito = ?, match_status = 'matched', match_origin = 'auto', updated_at = NOW() " +
         "WHERE match_status = 'ambiguous' AND idinscrito IS NULL AND pagador_nome <=> ? AND pagador_documento <=> ?",
       [idinscrito, pagador_nome, pagador_documento]
     );
@@ -1112,6 +1370,91 @@ app.post("/api/creditos/:id/match", requireAuth, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: "Erro ao atualizar credito" });
+  }
+});
+
+app.post("/api/creditos/:id/link", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const { idinscrito } = req.body || {};
+  if (!idinscrito) {
+    res.status(400).json({ error: "Informe o associado" });
+    return;
+  }
+  try {
+    const [rows] = await pool.query(
+      "SELECT pagador_nome, pagador_documento FROM creditos WHERE idcredito = ?",
+      [id]
+    );
+    if (!rows.length) {
+      res.status(404).json({ error: "Credito nao encontrado" });
+      return;
+    }
+    const pagadorNome = rows[0].pagador_nome || "";
+    const pagadorDocumento = rows[0].pagador_documento || "";
+    const nomeNorm = normalizeName(pagadorNome);
+    const docNorm = normalizeDocument(pagadorDocumento);
+    await pool.query(
+      "INSERT INTO creditos_match_map (idinscrito, nome_norm, doc_norm, created_at, updated_at) " +
+        "VALUES (?, ?, ?, NOW(), NOW()) " +
+        "ON DUPLICATE KEY UPDATE idinscrito = VALUES(idinscrito), updated_at = NOW()",
+      [idinscrito, nomeNorm, docNorm]
+    );
+    const [result] = await pool.query(
+      "UPDATE creditos SET idinscrito = ?, match_status = 'matched', match_origin = 'manual', updated_at = NOW() " +
+        "WHERE match_status IN ('unmatched', 'ambiguous') AND idinscrito IS NULL " +
+        "AND pagador_nome <=> ? AND pagador_documento <=> ?",
+      [idinscrito, pagadorNome, pagadorDocumento]
+    );
+    const [matchedRows] = await pool.query(
+      "SELECT idcredito FROM creditos WHERE idinscrito = ? AND pagador_nome <=> ? AND pagador_documento <=> ?",
+      [idinscrito, pagadorNome, pagadorDocumento]
+    );
+    res.json({
+      ok: true,
+      updated: result.affectedRows,
+      matched_ids: matchedRows.map((item) => item.idcredito)
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao vincular credito" });
+  }
+});
+
+app.post("/api/creditos/:id/unlink", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.query(
+      "SELECT pagador_nome, pagador_documento, idinscrito FROM creditos WHERE idcredito = ?",
+      [id]
+    );
+    if (!rows.length) {
+      res.status(404).json({ error: "Credito nao encontrado" });
+      return;
+    }
+    const pagadorNome = rows[0].pagador_nome || "";
+    const pagadorDocumento = rows[0].pagador_documento || "";
+    const nomeNorm = normalizeName(pagadorNome);
+    const docNorm = normalizeDocument(pagadorDocumento);
+    await pool.query(
+      "DELETE FROM creditos_match_map WHERE nome_norm = ? AND doc_norm = ?",
+      [nomeNorm, docNorm]
+    );
+    const [result] = await pool.query(
+      "UPDATE creditos SET idinscrito = NULL, match_status = 'unmatched', match_origin = 'auto', updated_at = NOW() " +
+        "WHERE match_status = 'matched' AND match_origin = 'manual' AND idmensalidade IS NULL " +
+        "AND pagador_nome <=> ? AND pagador_documento <=> ?",
+      [pagadorNome, pagadorDocumento]
+    );
+    const [matchedRows] = await pool.query(
+      "SELECT idcredito FROM creditos WHERE pagador_nome <=> ? AND pagador_documento <=> ?",
+      [pagadorNome, pagadorDocumento]
+    );
+    res.json({
+      ok: true,
+      updated: result.affectedRows,
+      matched_ids: matchedRows.map((item) => item.idcredito)
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Erro ao remover vinculo" });
   }
 });
 

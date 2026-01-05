@@ -18,13 +18,13 @@ function apiFetch(path, options = {}, token) {
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
-function apiUpload(path, formData, token) {
+function apiUpload(path, formData, token, method = "POST") {
   const headers = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
   return fetch(`${API_BASE}${path}`, {
-    method: "POST",
+    method,
     body: formData,
     headers
   });
@@ -583,8 +583,21 @@ function AddAssociadoModal({ open, onClose, onSave }) {
   );
 }
 
-function DespesaModal({ open, onClose, form, onChange, onSave }) {
+function DespesaModal({
+  open,
+  onClose,
+  form,
+  onChange,
+  onSave,
+  existingAnexos,
+  newAnexos,
+  onAddAnexos,
+  onRemoveNewAnexo,
+  onRemoveExistingAnexo,
+  isEdit
+}) {
   if (!open) return null;
+  const totalAnexos = (existingAnexos?.length || 0) + (newAnexos?.length || 0);
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
@@ -595,7 +608,7 @@ function DespesaModal({ open, onClose, form, onChange, onSave }) {
               Cadastro
             </p>
             <h2 className="mt-2 text-xl font-display text-slate-900">
-              Nova despesa
+              {isEdit ? "Editar despesa" : "Nova despesa"}
             </h2>
           </div>
           <button
@@ -653,6 +666,84 @@ function DespesaModal({ open, onClose, form, onChange, onSave }) {
               onChange={(event) => onChange("descricao", event.target.value)}
               placeholder="Detalhes da despesa"
             />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-slate-600">
+              Anexos (max 4)
+            </label>
+            <input
+              type="file"
+              multiple
+              onChange={onAddAnexos}
+              className="mt-2 w-full text-sm text-slate-500"
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {totalAnexos} de 4 anexos selecionados.
+            </p>
+            {totalAnexos === 0 ? (
+              <p className="mt-2 text-xs text-slate-400">
+                Nenhum anexo adicionado.
+              </p>
+            ) : (
+              <div className="mt-3 grid gap-2">
+                {(existingAnexos || []).map((anexo) => {
+                  const anexoUrl = anexo.url?.startsWith("http")
+                    ? anexo.url
+                    : `${API_BASE}${anexo.url}`;
+                  const isImage = anexo.mimeType?.startsWith("image/");
+                  return (
+                    <div
+                      key={anexo.id}
+                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isImage ? (
+                          <img
+                            src={anexoUrl}
+                            alt={anexo.nome}
+                            className="h-10 w-10 rounded object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded bg-slate-200 text-xs text-slate-600">
+                            ARQ
+                          </div>
+                        )}
+                        <a
+                          href={anexoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-slate-700 hover:text-blue-600"
+                        >
+                          {anexo.nome}
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onRemoveExistingAnexo(anexo.id)}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  );
+                })}
+                {(newAnexos || []).map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+                  >
+                    <span className="text-slate-700">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveNewAnexo(index)}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1104,7 +1195,7 @@ function ReceitasMonthModal({
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-blue-500 font-semibold">
-              Analise de creditos
+              Receitas
             </p>
             <h2 className="mt-2 text-xl font-display text-slate-900">
               {formatMonthYear(monthKey)}
@@ -2774,6 +2865,10 @@ function Dashboard({ token, onLogout }) {
     beneficiario: "",
     descricao: ""
   });
+  const [despesasEditing, setDespesasEditing] = useState(null);
+  const [despesasFiles, setDespesasFiles] = useState([]);
+  const [despesasExistingAnexos, setDespesasExistingAnexos] = useState([]);
+  const [despesasRemoveAnexos, setDespesasRemoveAnexos] = useState([]);
   const [despesasMonthOpen, setDespesasMonthOpen] = useState(false);
   const [despesasMonthKey, setDespesasMonthKey] = useState("");
   const [despesasMonthRows, setDespesasMonthRows] = useState([]);
@@ -2783,6 +2878,11 @@ function Dashboard({ token, onLogout }) {
   const [despesasImportError, setDespesasImportError] = useState("");
   const [despesasImportFileName, setDespesasImportFileName] = useState("");
   const [despesasImportResult, setDespesasImportResult] = useState(null);
+  const [resumoMonthKey, setResumoMonthKey] = useState("");
+  const [resumoReceitasRows, setResumoReceitasRows] = useState([]);
+  const [resumoDespesasRows, setResumoDespesasRows] = useState([]);
+  const [resumoMonthLoading, setResumoMonthLoading] = useState(false);
+  const [resumoMonthError, setResumoMonthError] = useState("");
   const [creditosRows, setCreditosRows] = useState([]);
   const [creditosLoading, setCreditosLoading] = useState(false);
   const [creditosError, setCreditosError] = useState("");
@@ -2950,21 +3050,112 @@ function Dashboard({ token, onLogout }) {
     }
   }
 
-  function openDespesaModal() {
-    setDespesasForm({
-      data_despesa: formatDateInput(new Date()),
-      valor: "",
-      beneficiario: "",
-      descricao: ""
-    });
+  async function loadResumoMonth(key) {
+    if (!key) return;
+    setResumoMonthLoading(true);
+    setResumoMonthError("");
+    setResumoReceitasRows([]);
+    setResumoDespesasRows([]);
+    try {
+      const [creditosResponse, despesasResponse] = await Promise.all([
+        apiFetch(`/api/creditos?month=${key}`, {}, token),
+        apiFetch(`/api/despesas?month=${key}`, {}, token)
+      ]);
+      if (!creditosResponse.ok || !despesasResponse.ok) {
+        throw new Error("Falha ao carregar o resumo do mes.");
+      }
+      const [creditosData, despesasData] = await Promise.all([
+        creditosResponse.json(),
+        despesasResponse.json()
+      ]);
+      setResumoReceitasRows(Array.isArray(creditosData) ? creditosData : []);
+      setResumoDespesasRows(Array.isArray(despesasData) ? despesasData : []);
+    } catch (err) {
+      setResumoMonthError("Nao foi possivel carregar o resumo do mes.");
+    } finally {
+      setResumoMonthLoading(false);
+    }
+  }
+
+  function openResumoMonth(key) {
+    if (resumoMonthKey === key) {
+      setResumoMonthKey("");
+      return;
+    }
+    setResumoMonthKey(key);
+    loadResumoMonth(key);
+  }
+
+  function openDespesaModal(row = null) {
+    if (row) {
+      const dateValue = row.data_despesa
+        ? new Date(`${row.data_despesa}T00:00:00`)
+        : new Date();
+      setDespesasForm({
+        data_despesa: formatDateInput(dateValue),
+        valor: row.valor,
+        beneficiario: row.beneficiario || "",
+        descricao: row.descricao || ""
+      });
+      setDespesasEditing(row);
+      setDespesasExistingAnexos(Array.isArray(row.anexos) ? row.anexos : []);
+      setDespesasRemoveAnexos([]);
+      setDespesasFiles([]);
+    } else {
+      setDespesasForm({
+        data_despesa: formatDateInput(new Date()),
+        valor: "",
+        beneficiario: "",
+        descricao: ""
+      });
+      setDespesasEditing(null);
+      setDespesasExistingAnexos([]);
+      setDespesasRemoveAnexos([]);
+      setDespesasFiles([]);
+    }
+    setDespesasError("");
     setDespesasOpen(true);
+  }
+
+  function closeDespesaModal() {
+    setDespesasOpen(false);
+    setDespesasEditing(null);
+    setDespesasExistingAnexos([]);
+    setDespesasRemoveAnexos([]);
+    setDespesasFiles([]);
   }
 
   function updateDespesaField(field, value) {
     setDespesasForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function handleCreateDespesa() {
+  function handleAddDespesaAnexos(event) {
+    const incoming = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!incoming.length) return;
+    const currentCount = despesasExistingAnexos.length + despesasFiles.length;
+    const remaining = 4 - currentCount;
+    if (remaining <= 0) {
+      setDespesasError("Maximo de 4 anexos por despesa.");
+      return;
+    }
+    const nextFiles = incoming.slice(0, remaining);
+    if (incoming.length > remaining) {
+      setDespesasError("Maximo de 4 anexos por despesa.");
+    }
+    setDespesasFiles((prev) => [...prev, ...nextFiles]);
+  }
+
+  function handleRemoveNewDespesaAnexo(index) {
+    setDespesasFiles((prev) => prev.filter((_, idx) => idx !== index));
+  }
+
+  function handleRemoveExistingDespesaAnexo(id) {
+    setDespesasExistingAnexos((prev) => prev.filter((item) => item.id !== id));
+    setDespesasRemoveAnexos((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }
+
+  async function handleSaveDespesa() {
     const valorNum = Number(despesasForm.valor);
     if (!despesasForm.data_despesa) {
       setDespesasError("Informe a data da despesa.");
@@ -2978,30 +3169,45 @@ function Dashboard({ token, onLogout }) {
       setDespesasError("Informe um valor valido.");
       return;
     }
+    if (despesasExistingAnexos.length + despesasFiles.length > 4) {
+      setDespesasError("Maximo de 4 anexos por despesa.");
+      return;
+    }
     setDespesasLoading(true);
     setDespesasError("");
     try {
-      const response = await apiFetch(
-        "/api/despesas",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            data_despesa: despesasForm.data_despesa,
-            valor: valorNum,
-            beneficiario: despesasForm.beneficiario,
-            descricao: despesasForm.descricao
-          })
-        },
-        token
-      );
+      const formData = new FormData();
+      formData.append("data_despesa", despesasForm.data_despesa);
+      formData.append("valor", String(valorNum));
+      formData.append("beneficiario", despesasForm.beneficiario);
+      formData.append("descricao", despesasForm.descricao || "");
+      if (despesasRemoveAnexos.length) {
+        formData.append("removeAnexos", JSON.stringify(despesasRemoveAnexos));
+      }
+      despesasFiles.forEach((file) => formData.append("anexos", file));
+      const response = despesasEditing
+        ? await apiUpload(
+            `/api/despesas/${despesasEditing.iddespesa}`,
+            formData,
+            token,
+            "PUT"
+          )
+        : await apiUpload("/api/despesas", formData, token);
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Falha ao cadastrar despesa");
+        throw new Error(
+          data.error || (despesasEditing ? "Falha ao atualizar despesa" : "Falha ao cadastrar despesa")
+        );
       }
       await loadDespesas();
-      setDespesasOpen(false);
+      closeDespesaModal();
     } catch (err) {
-      setDespesasError(err.message || "Nao foi possivel cadastrar a despesa.");
+      setDespesasError(
+        err.message ||
+          (despesasEditing
+            ? "Nao foi possivel atualizar a despesa."
+            : "Nao foi possivel cadastrar a despesa.")
+      );
     } finally {
       setDespesasLoading(false);
     }
@@ -3502,7 +3708,16 @@ function Dashboard({ token, onLogout }) {
               {resumoCards.map((item) => (
                 <div
                   key={item.mes}
-                  className="rounded-2xl border border-slate-100 bg-white p-5 shadow-card"
+                  className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:border-blue-100 hover:shadow-lg"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openResumoMonth(item.mes)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openResumoMonth(item.mes);
+                    }
+                  }}
                 >
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                     {formatMonthYear(item.mes)}
@@ -3527,14 +3742,20 @@ function Dashboard({ token, onLogout }) {
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
-                      className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
-                      onClick={() => openCreditosMonth(item.mes)}
+                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openCreditosMonth(item.mes);
+                      }}
                     >
-                      Analise de creditos
+                      Receitas
                     </button>
                     <button
                       className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                      onClick={() => openMonthDetails(item.mes)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openMonthDetails(item.mes);
+                      }}
                     >
                       Despesas
                     </button>
@@ -3586,7 +3807,7 @@ function Dashboard({ token, onLogout }) {
                 </button>
                 <button
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-                  onClick={openDespesaModal}
+                  onClick={() => openDespesaModal()}
                 >
                   Nova despesa
                 </button>
@@ -3603,6 +3824,155 @@ function Dashboard({ token, onLogout }) {
             ) : null}
           </div>
         </div>
+
+        {resumoMonthKey ? (
+          <div className="mb-6 rounded-2xl border border-slate-100 bg-white p-6 shadow-card">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                  Resumo do mes
+                </p>
+                <h3 className="mt-2 text-lg font-display text-slate-900">
+                  {formatMonthYear(resumoMonthKey)}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                onClick={() => setResumoMonthKey("")}
+              >
+                Fechar
+              </button>
+            </div>
+
+            {resumoMonthError ? (
+              <p className="mt-3 text-sm text-rose-600">{resumoMonthError}</p>
+            ) : resumoMonthLoading ? (
+              <p className="mt-3 text-sm text-slate-500">Carregando...</p>
+            ) : (
+              <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-slate-700">
+                      Receitas
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {resumoReceitasRows.length} registros
+                    </span>
+                  </div>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="min-w-full text-left text-xs text-slate-600">
+                      <thead className="uppercase text-slate-400">
+                        <tr>
+                          <th className="py-2 pr-3">Data</th>
+                          <th className="py-2 pr-3">Nome</th>
+                          <th className="py-2 pr-3 text-right">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {resumoReceitasRows.length === 0 ? (
+                          <tr>
+                            <td className="py-3 text-slate-400" colSpan={3}>
+                              Nenhuma receita encontrada.
+                            </td>
+                          </tr>
+                        ) : (
+                          resumoReceitasRows.map((row) => (
+                            <tr key={row.idcredito}>
+                              <td className="py-2 pr-3">
+                                {formatDateDisplay(row.data_credito)}
+                              </td>
+                              <td className="py-2 pr-3">
+                                {row.pagador_nome || row.pagador_documento || "-"}
+                              </td>
+                              <td className="py-2 pr-3 text-right font-semibold text-slate-700">
+                                {formatCurrency(row.valor)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td className="py-2 pr-3 text-slate-500" colSpan={2}>
+                            Total
+                          </td>
+                          <td className="py-2 pr-3 text-right font-semibold text-slate-900">
+                            {formatCurrency(
+                              resumoReceitasRows.reduce(
+                                (sum, row) => sum + Number(row.valor || 0),
+                                0
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold text-slate-700">
+                      Despesas
+                    </h4>
+                    <span className="text-xs text-slate-400">
+                      {resumoDespesasRows.length} registros
+                    </span>
+                  </div>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="min-w-full text-left text-xs text-slate-600">
+                      <thead className="uppercase text-slate-400">
+                        <tr>
+                          <th className="py-2 pr-3">Data</th>
+                          <th className="py-2 pr-3">Descricao</th>
+                          <th className="py-2 pr-3 text-right">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {resumoDespesasRows.length === 0 ? (
+                          <tr>
+                            <td className="py-3 text-slate-400" colSpan={3}>
+                              Nenhuma despesa encontrada.
+                            </td>
+                          </tr>
+                        ) : (
+                          resumoDespesasRows.map((row) => (
+                            <tr key={row.iddespesa}>
+                              <td className="py-2 pr-3">
+                                {formatDateDisplay(row.data_despesa)}
+                              </td>
+                              <td className="py-2 pr-3">
+                                {row.descricao || "-"}
+                              </td>
+                              <td className="py-2 pr-3 text-right font-semibold text-slate-700">
+                                {formatCurrency(row.valor)}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td className="py-2 pr-3 text-slate-500" colSpan={2}>
+                            Total
+                          </td>
+                          <td className="py-2 pr-3 text-right font-semibold text-slate-900">
+                            {formatCurrency(
+                              resumoDespesasRows.reduce(
+                                (sum, row) => sum + Number(row.valor || 0),
+                                0
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {adminTab === "associados" ? (
           <div className="relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-white p-6 shadow-card">
@@ -3777,13 +4147,15 @@ function Dashboard({ token, onLogout }) {
                       <th className="py-3 pr-4">Data</th>
                       <th className="py-3 pr-4">Beneficiario</th>
                       <th className="py-3 pr-4">Descricao</th>
+                      <th className="py-3 pr-4 text-right">Anexos</th>
                       <th className="py-3 pr-4 text-right">Valor</th>
+                      <th className="py-3 pr-4 text-right">Acoes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {despesasRecentes.length === 0 ? (
                       <tr>
-                        <td className="py-4 text-slate-500" colSpan={4}>
+                        <td className="py-4 text-slate-500" colSpan={6}>
                           Nenhuma despesa encontrada.
                         </td>
                       </tr>
@@ -3799,8 +4171,59 @@ function Dashboard({ token, onLogout }) {
                           <td className="py-3 pr-4 text-slate-500">
                             {row.descricao || "-"}
                           </td>
+                          <td className="py-3 pr-4 text-right text-sm text-slate-500">
+                            {(() => {
+                              const anexos = Array.isArray(row.anexos) ? row.anexos : [];
+                              if (!anexos.length) return "-";
+                              const visible = anexos.slice(0, 2);
+                              return (
+                                <div className="flex items-center justify-end gap-2">
+                                  {visible.map((anexo) => {
+                                    const anexoUrl = anexo.url?.startsWith("http")
+                                      ? anexo.url
+                                      : `${API_BASE}${anexo.url}`;
+                                    const isImage = anexo.mimeType?.startsWith("image/");
+                                    return (
+                                      <a
+                                        key={anexo.id}
+                                        href={anexoUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded border border-slate-200 bg-slate-50 text-xs text-slate-600"
+                                      >
+                                        {isImage ? (
+                                          <img
+                                            src={anexoUrl}
+                                            alt={anexo.nome}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          "ARQ"
+                                        )}
+                                      </a>
+                                    );
+                                  })}
+                                  {anexos.length > 2 ? (
+                                    <span className="text-xs text-slate-400">
+                                      +{anexos.length - 2}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="py-3 pr-4 text-right font-semibold text-slate-700">
                             {formatCurrency(row.valor)}
+                          </td>
+                          <td className="py-3 pr-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => openDespesaModal(row)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50"
+                            >
+                              <PencilLine className="h-3.5 w-3.5" />
+                              Editar
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -3911,10 +4334,16 @@ function Dashboard({ token, onLogout }) {
       />
       <DespesaModal
         open={despesasOpen}
-        onClose={() => setDespesasOpen(false)}
+        onClose={closeDespesaModal}
         form={despesasForm}
         onChange={updateDespesaField}
-        onSave={handleCreateDespesa}
+        onSave={handleSaveDespesa}
+        existingAnexos={despesasExistingAnexos}
+        newAnexos={despesasFiles}
+        onAddAnexos={handleAddDespesaAnexos}
+        onRemoveNewAnexo={handleRemoveNewDespesaAnexo}
+        onRemoveExistingAnexo={handleRemoveExistingDespesaAnexo}
+        isEdit={Boolean(despesasEditing)}
       />
       <DespesasMonthModal
         open={despesasMonthOpen}
