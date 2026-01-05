@@ -135,6 +135,15 @@ const MONTH_LABELS = [
   "Dezembro"
 ];
 
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 function formatMonthYear(key) {
   if (!key) return "";
   const [year, month] = key.split("-");
@@ -895,12 +904,23 @@ function DespesasMonthModal({ open, onClose, monthKey, rows }) {
   );
 }
 
-function ReceitasMonthModal({ open, onClose, monthKey, rows, onSelect }) {
+function ReceitasMonthModal({
+  open,
+  onClose,
+  monthKey,
+  rows,
+  onSelect,
+  onLink,
+  onUnlink,
+  associados
+}) {
   const [sortBy, setSortBy] = useState("data_desc");
   const [filterBy, setFilterBy] = useState("todos");
   const [reportUrl, setReportUrl] = useState("");
   const [reportFileName, setReportFileName] = useState("");
   const [reportBusy, setReportBusy] = useState(false);
+  const [manualSearch, setManualSearch] = useState({});
+  const [manualPick, setManualPick] = useState({});
   const total = rows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
   const matched = useMemo(
     () => rows.filter((row) => row.match_status === "matched" || row.match_status === "importado"),
@@ -949,6 +969,22 @@ function ReceitasMonthModal({ open, onClose, monthKey, rows, onSelect }) {
   }, [filteredRows, sortBy]);
   const printDate = new Date().toLocaleDateString("pt-BR");
   const monthLabel = formatMonthYear(monthKey);
+  const associadosSafe = Array.isArray(associados) ? associados : [];
+
+  function getAssociadoOptions(query) {
+    const term = normalizeText(query);
+    const digits = String(query || "").replace(/\D/g, "");
+    if (!term && !digits) {
+      return associadosSafe.slice(0, 8);
+    }
+    return associadosSafe
+      .filter((item) => {
+        const name = normalizeText(item.nome);
+        const cpf = String(item.cpf || "").replace(/\D/g, "");
+        return (term && name.includes(term)) || (digits && cpf.includes(digits));
+      })
+      .slice(0, 8);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -1189,9 +1225,77 @@ function ReceitasMonthModal({ open, onClose, monthKey, rows, onSelect }) {
                       <td className="py-3 pr-4">
                         {row.match_status === "matched" ||
                         row.match_status === "importado" ? (
-                          <span className="text-emerald-600">
-                            {row.associado_nome || "Encontrado"}
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-emerald-600">
+                              {row.associado_nome || "Encontrado"}
+                            </span>
+                            {row.match_status === "matched" &&
+                            row.match_origin === "manual" ? (
+                              <button
+                                type="button"
+                                className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                                onClick={() => onUnlink?.(row.idcredito)}
+                              >
+                                Remover vinculo
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : row.match_status === "unmatched" ? (
+                          <div className="flex flex-col gap-2">
+                            <input
+                              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs"
+                              placeholder="Buscar associado"
+                              value={manualSearch[row.idcredito] || ""}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                setManualSearch((prev) => ({
+                                  ...prev,
+                                  [row.idcredito]: value
+                                }));
+                                setManualPick((prev) => ({
+                                  ...prev,
+                                  [row.idcredito]: ""
+                                }));
+                              }}
+                            />
+                            <div className="flex items-center gap-2">
+                              <select
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs"
+                                value={manualPick[row.idcredito] || ""}
+                                onChange={(event) =>
+                                  setManualPick((prev) => ({
+                                    ...prev,
+                                    [row.idcredito]: event.target.value
+                                  }))
+                                }
+                              >
+                                <option value="">Selecionar</option>
+                                {getAssociadoOptions(
+                                  manualSearch[row.idcredito]
+                                ).map((item) => (
+                                  <option
+                                    key={item.idinscritos}
+                                    value={item.idinscritos}
+                                  >
+                                    {item.nome} ({item.cpf || "CPF/CNPJ"})
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                className="rounded-lg border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
+                                onClick={() =>
+                                  onLink?.(
+                                    row.idcredito,
+                                    manualPick[row.idcredito]
+                                  )
+                                }
+                                disabled={!manualPick[row.idcredito]}
+                              >
+                                Vincular
+                              </button>
+                            </div>
+                          </div>
                         ) : row.candidatos?.length ? (
                           <select
                             className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs"
@@ -2134,6 +2238,7 @@ function UserDashboard({ token, onLogout }) {
   const [polls, setPolls] = useState([]);
   const [pollsError, setPollsError] = useState("");
   const [pollsLoading, setPollsLoading] = useState(true);
+  const [qrCopyStatus, setQrCopyStatus] = useState("");
 
   useEffect(() => {
     let isActive = true;
@@ -2222,6 +2327,41 @@ function UserDashboard({ token, onLogout }) {
       setPolls(data || []);
     } catch (err) {
       setPollsError(err.message || "Nao foi possivel registrar seu voto.");
+    }
+  }
+
+  function copyTextWithExecCommand(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    return ok;
+  }
+
+  async function handleCopyQrCode() {
+    if (qrCopyStatus === "loading") return;
+    setQrCopyStatus("loading");
+    try {
+      const pixPayload = "05152486000105";
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pixPayload);
+        setQrCopyStatus("success");
+        return;
+      }
+      const copied = copyTextWithExecCommand(pixPayload);
+      if (!copied) {
+        throw new Error("Clipboard indisponivel");
+      }
+      setQrCopyStatus("success");
+    } catch (err) {
+      setQrCopyStatus("error");
+    } finally {
+      setTimeout(() => setQrCopyStatus(""), 4000);
     }
   }
 
@@ -2506,9 +2646,27 @@ function UserDashboard({ token, onLogout }) {
               <h3 className="text-lg font-display text-slate-900">
                 QR Code para pagamento
               </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Use o QR Code abaixo para realizar pagamentos.
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+                <button
+                  type="button"
+                  onClick={handleCopyQrCode}
+                  disabled={qrCopyStatus === "loading"}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {qrCopyStatus === "loading"
+                    ? "Copiando..."
+                    : "Copiar chave CNPJ"}
+                </button>
+                {qrCopyStatus === "success" ? (
+                  <span className="text-xs font-semibold text-emerald-600">
+                    CNPJ copiado.
+                  </span>
+                ) : qrCopyStatus === "error" ? (
+                  <span className="text-xs font-semibold text-rose-600">
+                    Nao foi possivel copiar.
+                  </span>
+                ) : null}
+              </div>
               <div className="mt-4 flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
                 <img
                   src={qrCode}
@@ -2639,6 +2797,13 @@ function Dashboard({ token, onLogout }) {
   const [creditosMonthRows, setCreditosMonthRows] = useState([]);
   const [resumoMensal, setResumoMensal] = useState([]);
   const [resumoLoading, setResumoLoading] = useState(false);
+  const associadosMap = useMemo(() => {
+    const map = {};
+    rows.forEach((item) => {
+      map[item.idinscritos] = item.nome;
+    });
+    return map;
+  }, [rows]);
 
   const filteredSearch = useMemo(() => search.trim(), [search]);
   const despesasSummary = useMemo(() => {
@@ -2955,6 +3120,7 @@ function Dashboard({ token, onLogout }) {
             ? {
                 ...row,
                 match_status: "matched",
+                match_origin: "auto",
                 associado_nome: resolvedName(row)
               }
             : row
@@ -2966,6 +3132,7 @@ function Dashboard({ token, onLogout }) {
             ? {
                 ...row,
                 match_status: "matched",
+                match_origin: "auto",
                 associado_nome: resolvedName(row)
               }
             : row
@@ -2977,6 +3144,7 @@ function Dashboard({ token, onLogout }) {
             ? {
                 ...row,
                 match_status: "matched",
+                match_origin: "auto",
                 associado_nome: resolvedName(row)
               }
             : row
@@ -2984,6 +3152,75 @@ function Dashboard({ token, onLogout }) {
       );
     } catch (err) {
       setCreditosImportError("Nao foi possivel selecionar o associado.");
+    }
+  }
+
+  async function handleLinkCredito(idcredito, idinscrito) {
+    if (!idinscrito) return;
+    try {
+      const response = await apiFetch(
+        `/api/creditos/${idcredito}/link`,
+        {
+          method: "POST",
+          body: JSON.stringify({ idinscrito: Number(idinscrito) })
+        },
+        token
+      );
+      if (!response.ok) {
+        throw new Error("Falha ao vincular");
+      }
+      const data = await response.json().catch(() => ({}));
+      const matchedIds = Array.isArray(data.matched_ids)
+        ? data.matched_ids.map((item) => Number(item))
+        : [Number(idcredito)];
+      const associadoNome = associadosMap[idinscrito] || "Selecionado";
+      const updateRow = (row) =>
+        matchedIds.includes(Number(row.idcredito))
+          ? {
+              ...row,
+              match_status: "matched",
+              match_origin: "manual",
+              associado_nome: associadoNome
+            }
+          : row;
+      setCreditosImportRows((prev) => prev.map(updateRow));
+      setCreditosMonthRows((prev) => prev.map(updateRow));
+      setCreditosRows((prev) => prev.map(updateRow));
+    } catch (err) {
+      setCreditosError("Nao foi possivel vincular o credito.");
+    }
+  }
+
+  async function handleUnlinkCredito(idcredito) {
+    if (!idcredito) return;
+    try {
+      const response = await apiFetch(
+        `/api/creditos/${idcredito}/unlink`,
+        { method: "POST" },
+        token
+      );
+      if (!response.ok) {
+        throw new Error("Falha ao remover vinculo");
+      }
+      const data = await response.json().catch(() => ({}));
+      const matchedIds = Array.isArray(data.matched_ids)
+        ? data.matched_ids.map((item) => Number(item))
+        : [Number(idcredito)];
+      const updateRow = (row) =>
+        matchedIds.includes(Number(row.idcredito))
+          ? {
+              ...row,
+              match_status: "unmatched",
+              match_origin: "auto",
+              idinscrito: null,
+              associado_nome: null
+            }
+          : row;
+      setCreditosImportRows((prev) => prev.map(updateRow));
+      setCreditosMonthRows((prev) => prev.map(updateRow));
+      setCreditosRows((prev) => prev.map(updateRow));
+    } catch (err) {
+      setCreditosError("Nao foi possivel remover o vinculo.");
     }
   }
 
@@ -3261,7 +3498,7 @@ function Dashboard({ token, onLogout }) {
               Nenhum resumo disponivel ainda.
             </p>
           ) : (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {resumoCards.map((item) => (
                 <div
                   key={item.mes}
@@ -3691,6 +3928,9 @@ function Dashboard({ token, onLogout }) {
         monthKey={creditosMonthKey}
         rows={creditosMonthRows}
         onSelect={handleSelectCreditoMatch}
+        onLink={handleLinkCredito}
+        onUnlink={handleUnlinkCredito}
+        associados={rows}
       />
       <DespesasImportModal
         open={despesasImportOpen}
