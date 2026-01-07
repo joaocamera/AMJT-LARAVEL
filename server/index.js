@@ -172,7 +172,16 @@ async function storeDespesaAnexoFile(file) {
   const ext = path.extname(file.originalname || "").slice(0, 10);
   const storedName = `${crypto.randomUUID()}${ext}`;
   const destPath = path.join(despesasUploadDir, storedName);
-  await fs.rename(file.path, destPath);
+  await fs.mkdir(despesasUploadDir, { recursive: true });
+  try {
+    await fs.rename(file.path, destPath);
+  } catch (err) {
+    if (err?.code !== "EXDEV") {
+      throw err;
+    }
+    await fs.copyFile(file.path, destPath);
+    await fs.unlink(file.path);
+  }
   return {
     storedName,
     originalName: file.originalname || storedName,
@@ -974,6 +983,7 @@ app.post(
         }))
       });
     } catch (err) {
+      console.error("Erro ao cadastrar despesa:", err);
       if (insertedId) {
         await pool.query("DELETE FROM despesas WHERE iddespesa = ?", [insertedId]);
       }
@@ -1093,6 +1103,11 @@ app.put(
         anexos: anexosMap.get(Number(id)) || []
       });
     } catch (err) {
+      console.error("Erro ao atualizar despesa:", err);
+      if (err?.code === "ER_DUP_ENTRY") {
+        res.status(409).json({ error: "Despesa ja cadastrada" });
+        return;
+      }
       res.status(500).json({ error: "Erro ao atualizar despesa" });
     }
   }
@@ -1126,6 +1141,11 @@ app.post("/api/despesas/import", requireAuth, upload.single("file"), async (req,
     const rows = parseStatementText(stdout || "");
     res.json({ rows, total: rows.length });
   } catch (err) {
+    console.error("Erro ao processar extrato:", err);
+    if (err?.code === "ENOENT") {
+      res.status(500).json({ error: "pdftotext nao encontrado no servidor" });
+      return;
+    }
     res.status(500).json({ error: "Nao foi possivel processar o extrato" });
   } finally {
     try {
@@ -1319,6 +1339,7 @@ app.post("/api/creditos/import", requireAuth, upload.single("file"), async (req,
     }
     res.json({ rows: responseRows, total: responseRows.length, import_id: importId });
   } catch (err) {
+    console.error("Erro ao importar creditos:", err);
     res.status(500).json({ error: "Nao foi possivel processar o extrato" });
   } finally {
     try {
