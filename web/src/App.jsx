@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, PencilLine, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, LogOut, PencilLine, Search } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import logo from "./logo.jpeg";
@@ -2858,6 +2858,7 @@ function Dashboard({ token, onLogout }) {
   const [despesasRows, setDespesasRows] = useState([]);
   const [despesasLoading, setDespesasLoading] = useState(false);
   const [despesasError, setDespesasError] = useState("");
+  const [despesasFilterMonth, setDespesasFilterMonth] = useState("");
   const [despesasOpen, setDespesasOpen] = useState(false);
   const [despesasForm, setDespesasForm] = useState({
     data_despesa: "",
@@ -2883,6 +2884,7 @@ function Dashboard({ token, onLogout }) {
   const [resumoDespesasRows, setResumoDespesasRows] = useState([]);
   const [resumoMonthLoading, setResumoMonthLoading] = useState(false);
   const [resumoMonthError, setResumoMonthError] = useState("");
+  const [resumoExpanded, setResumoExpanded] = useState(false);
   const [creditosRows, setCreditosRows] = useState([]);
   const [creditosLoading, setCreditosLoading] = useState(false);
   const [creditosError, setCreditosError] = useState("");
@@ -2940,18 +2942,31 @@ function Dashboard({ token, onLogout }) {
     () => despesasRows.reduce((sum, row) => sum + Number(row.valor || 0), 0),
     [despesasRows]
   );
-  const despesasRecentes = useMemo(() => despesasRows.slice(0, 10), [despesasRows]);
-  const resumoCards = useMemo(() => resumoMensal.slice(0, 6), [resumoMensal]);
+  const despesasRecentes = useMemo(() => despesasRows, [despesasRows]);
+  const resumoDisplayCount = resumoExpanded ? 12 : 4;
+  const resumoCards = useMemo(
+    () => resumoMensal.slice(0, resumoDisplayCount),
+    [resumoMensal, resumoDisplayCount]
+  );
 
   useEffect(() => {
     if (adminTab !== "despesas") return;
-    loadDespesas();
-  }, [adminTab, token]);
+    loadDespesas(despesasFilterMonth);
+  }, [adminTab, token, despesasFilterMonth]);
 
   useEffect(() => {
     if (adminTab !== "receitas") return;
     loadCreditos();
   }, [adminTab, token]);
+
+  useEffect(() => {
+    if (!resumoMonthKey) {
+      setResumoMonthLoading(false);
+      setResumoMonthError("");
+      return;
+    }
+    loadResumoMonth(resumoMonthKey);
+  }, [resumoMonthKey, token]);
 
   useEffect(() => {
     loadResumoMensal();
@@ -2995,11 +3010,12 @@ function Dashboard({ token, onLogout }) {
     };
   }, [filteredSearch, statusFilter, token]);
 
-  async function loadDespesas() {
+  async function loadDespesas(month) {
     setDespesasLoading(true);
     setDespesasError("");
     try {
-      const response = await apiFetch("/api/despesas", {}, token);
+      const query = month ? `?month=${month}` : "";
+      const response = await apiFetch(`/api/despesas${query}`, {}, token);
       if (!response.ok) {
         throw new Error("Falha ao carregar");
       }
@@ -3080,19 +3096,19 @@ function Dashboard({ token, onLogout }) {
   function openResumoMonth(key) {
     if (resumoMonthKey === key) {
       setResumoMonthKey("");
+      setResumoReceitasRows([]);
+      setResumoDespesasRows([]);
       return;
     }
     setResumoMonthKey(key);
-    loadResumoMonth(key);
   }
 
   function openDespesaModal(row = null) {
     if (row) {
-      const dateValue = row.data_despesa
-        ? new Date(`${row.data_despesa}T00:00:00`)
-        : new Date();
+      const dateValue = row.data_despesa ? new Date(row.data_despesa) : new Date();
+      const safeDate = Number.isNaN(dateValue.getTime()) ? new Date() : dateValue;
       setDespesasForm({
-        data_despesa: formatDateInput(dateValue),
+        data_despesa: formatDateInput(safeDate),
         valor: row.valor,
         beneficiario: row.beneficiario || "",
         descricao: row.descricao || ""
@@ -3695,9 +3711,20 @@ function Dashboard({ token, onLogout }) {
                 Resumo mensal
               </h2>
             </div>
-            {resumoLoading ? (
-              <span className="text-xs text-slate-400">Atualizando...</span>
-            ) : null}
+            <div className="flex items-center gap-3">
+              {resumoMensal.length > 4 ? (
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+                  onClick={() => setResumoExpanded((prev) => !prev)}
+                >
+                  {resumoExpanded ? "Mostrar menos" : "Mostrar mais 8 meses"}
+                </button>
+              ) : null}
+              {resumoLoading ? (
+                <span className="text-xs text-slate-400">Atualizando...</span>
+              ) : null}
+            </div>
           </div>
           {resumoCards.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
@@ -3708,7 +3735,11 @@ function Dashboard({ token, onLogout }) {
               {resumoCards.map((item) => (
                 <div
                   key={item.mes}
-                  className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:border-blue-100 hover:shadow-lg"
+                  className={`cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:border-blue-100 hover:shadow-lg ${
+                    resumoMonthKey === item.mes
+                      ? "border-blue-200 ring-1 ring-blue-100"
+                      : ""
+                  }`}
                   role="button"
                   tabIndex={0}
                   onClick={() => openResumoMonth(item.mes)}
@@ -3719,9 +3750,14 @@ function Dashboard({ token, onLogout }) {
                     }
                   }}
                 >
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    {formatMonthYear(item.mes)}
-                  </p>
+                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
+                    <span>{formatMonthYear(item.mes)}</span>
+                    {resumoMonthKey === item.mes ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
                   <div className="mt-4 grid gap-3 text-sm text-slate-600">
                     <div className="flex items-center justify-between">
                       <span>Receitas</span>
@@ -4131,16 +4167,24 @@ function Dashboard({ token, onLogout }) {
             <div className="mt-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-700">
-                  Ultimas despesas
+                  Despesas do mes
                 </h3>
-                <button
-                  className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 hover:text-blue-600"
-                  onClick={loadDespesas}
-                >
-                  Atualizar
-                </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="month"
+                    value={despesasFilterMonth}
+                    onChange={(event) => setDespesasFilterMonth(event.target.value)}
+                    className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  />
+                  <button
+                    className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-500 hover:text-blue-600"
+                    onClick={() => loadDespesas(despesasFilterMonth)}
+                  >
+                    Atualizar
+                  </button>
+                </div>
               </div>
-              <div className="mt-3 overflow-x-auto">
+              <div className="mt-3 max-h-[420px] overflow-auto">
                 <table className="min-w-full text-left text-sm">
                   <thead className="text-xs uppercase text-slate-400">
                     <tr>
