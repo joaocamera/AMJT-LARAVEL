@@ -2544,13 +2544,13 @@ function UserDashboard({ token, onLogout }) {
       <header className="relative overflow-hidden bg-blue-600 text-white">
         <div className="pointer-events-none absolute -left-20 top-0 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
         <div className="pointer-events-none absolute -right-24 -top-10 h-44 w-44 rounded-full bg-sky-300/30 blur-2xl" />
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="flex items-center gap-4">
             <div className="rounded-full bg-white/20 p-1 ring-2 ring-white/30">
               <img
                 src={logo}
                 alt="Associacao de Moradores Jardim Tarraf II"
-                className="h-12 w-12 rounded-full bg-white object-cover"
+                className="h-10 w-10 rounded-full bg-white object-cover sm:h-12 sm:w-12"
               />
             </div>
             <div>
@@ -2564,7 +2564,7 @@ function UserDashboard({ token, onLogout }) {
             </div>
           </div>
           <button
-            className="inline-flex items-center gap-2 rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white hover:bg-white/25 sm:w-auto"
             onClick={onLogout}
           >
             <LogOut size={16} />
@@ -2573,13 +2573,13 @@ function UserDashboard({ token, onLogout }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {error ? <p className="mb-4 text-sm text-rose-600">{error}</p> : null}
         {message ? <p className="mb-4 text-sm text-emerald-600">{message}</p> : null}
 
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-2xl bg-white p-6 shadow-card">
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-display text-slate-900">
                   Seus dados
@@ -2657,9 +2657,9 @@ function UserDashboard({ token, onLogout }) {
               ou pelo grupo da associacao no WhatsApp.
             </p>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 onClick={handleSaveProfile}
                 disabled={saving}
               >
@@ -2670,7 +2670,7 @@ function UserDashboard({ token, onLogout }) {
 
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl bg-white p-6 shadow-card">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-lg font-display text-slate-900">
                     Enquetes
@@ -2768,7 +2768,7 @@ function UserDashboard({ token, onLogout }) {
             </div>
 
             <div className="rounded-2xl bg-white p-6 shadow-card">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h3 className="text-lg font-display text-slate-900">
                     Pagamentos
@@ -2782,7 +2782,47 @@ function UserDashboard({ token, onLogout }) {
                 </div>
               </div>
 
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 grid gap-3 sm:hidden">
+                {loading ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                    Carregando...
+                  </div>
+                ) : payments.length === 0 ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                    Nenhum pagamento registrado.
+                  </div>
+                ) : (
+                  payments.map((item) => (
+                    <div
+                      key={item.idmensalidade}
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
+                    >
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
+                        <span>Competencia</span>
+                        <span>{formatDateDisplay(item.competencia)}</span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
+                        <span>Meses</span>
+                        <span className="text-right text-slate-700">{item.meses}</span>
+                        <span>Doacao</span>
+                        <span className="text-right text-slate-700">
+                          {formatCurrency(item.doacao)}
+                        </span>
+                        <span>Total</span>
+                        <span className="text-right font-semibold text-slate-800">
+                          {formatCurrency(item.valor_total)}
+                        </span>
+                        <span>Pagamento</span>
+                        <span className="text-right text-slate-700">
+                          {formatDateDisplay(item.data_pagamento)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-4 hidden overflow-x-auto sm:block">
                 <table className="min-w-full text-left text-sm">
                   <thead className="text-xs uppercase text-slate-400">
                     <tr>

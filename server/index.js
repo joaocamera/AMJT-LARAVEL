@@ -855,8 +855,10 @@ app.put("/api/associado/me", requireUserAuth, async (req, res) => {
 app.get("/api/associado/pagamentos", requireUserAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT idmensalidade, competencia, meses, valor_mensal, doacao, valor_total, data_pagamento, created_at, updated_at FROM mensalidades WHERE idinscrito = ? ORDER BY data_pagamento DESC, idmensalidade DESC",
-      [req.user.idinscrito]
+      "SELECT idmensalidade, competencia, meses, valor_mensal, doacao, valor_total, data_pagamento, created_at, updated_at " +
+        "FROM mensalidades WHERE idinscrito = ? AND competencia >= ? " +
+        "ORDER BY data_pagamento DESC, idmensalidade DESC",
+      [req.user.idinscrito, START_COMPETENCIA]
     );
     res.json(rows);
   } catch (err) {
