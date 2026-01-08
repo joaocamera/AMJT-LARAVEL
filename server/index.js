@@ -893,7 +893,7 @@ app.get("/api/despesas", requireAuth, async (req, res) => {
       params.push(`${month}-01`, `${month}-01`);
     }
     const [rows] = await pool.query(
-      "SELECT iddespesa, data_despesa, valor, beneficiario, descricao, created_at, updated_at " +
+      "SELECT iddespesa, data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, created_at, updated_at " +
         `FROM despesas ${where} ORDER BY data_despesa DESC, iddespesa DESC`,
       params
     );
@@ -920,7 +920,7 @@ app.post(
     despesasUpload.array("anexos", 4)(req, res, next);
   },
   async (req, res) => {
-    const { data_despesa, valor, beneficiario, descricao } = req.body || {};
+    const { data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe } = req.body || {};
     const files = Array.isArray(req.files) ? req.files : [];
     const valorNum = Number(valor);
     if (!data_despesa) {
@@ -949,9 +949,17 @@ app.post(
     const storedFiles = [];
     try {
       const [result] = await pool.query(
-        "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, hash, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, NOW(), NOW())",
-        [data_despesa, valorNum, String(beneficiario).trim(), descricao || null, hash]
+        "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, hash, created_at, updated_at) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+        [
+          data_despesa,
+          valorNum,
+          String(beneficiario).trim(),
+          descricao || null,
+          numero_nota || null,
+          chave_nfe || null,
+          hash
+        ]
       );
       insertedId = result.insertId;
       for (const file of files) {
@@ -977,6 +985,8 @@ app.post(
         valor: valorNum,
         beneficiario: String(beneficiario).trim(),
         descricao: descricao || null,
+        numero_nota: numero_nota || null,
+        chave_nfe: chave_nfe || null,
         anexos: storedFiles.map((stored) => ({
           nome: stored.originalName,
           url: `/uploads/despesas/${stored.storedName}`,
@@ -1015,7 +1025,8 @@ app.put(
   },
   async (req, res) => {
     const { id } = req.params;
-    const { data_despesa, valor, beneficiario, descricao, removeAnexos } = req.body || {};
+    const { data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, removeAnexos } =
+      req.body || {};
     const files = Array.isArray(req.files) ? req.files : [];
     const valorNum = Number(valor);
     if (!data_despesa) {
@@ -1062,8 +1073,17 @@ app.put(
         descricao
       });
       await pool.query(
-        "UPDATE despesas SET data_despesa = ?, valor = ?, beneficiario = ?, descricao = ?, hash = ?, updated_at = NOW() WHERE iddespesa = ? AND deleted_at IS NULL",
-        [data_despesa, valorNum, String(beneficiario).trim(), descricao || null, hash, id]
+        "UPDATE despesas SET data_despesa = ?, valor = ?, beneficiario = ?, descricao = ?, numero_nota = ?, chave_nfe = ?, hash = ?, updated_at = NOW() WHERE iddespesa = ? AND deleted_at IS NULL",
+        [
+          data_despesa,
+          valorNum,
+          String(beneficiario).trim(),
+          descricao || null,
+          numero_nota || null,
+          chave_nfe || null,
+          hash,
+          id
+        ]
       );
       if (anexosToRemove.length) {
         const placeholders = anexosToRemove.map(() => "?").join(", ");
@@ -1102,6 +1122,8 @@ app.put(
         valor: valorNum,
         beneficiario: String(beneficiario).trim(),
         descricao: descricao || null,
+        numero_nota: numero_nota || null,
+        chave_nfe: chave_nfe || null,
         anexos: anexosMap.get(Number(id)) || []
       });
     } catch (err) {
@@ -1181,12 +1203,12 @@ app.post("/api/despesas/bulk", requireAuth, async (req, res) => {
       beneficiario,
       descricao
     });
-    values.push("(?, ?, ?, ?, ?, NOW(), NOW())");
-    params.push(data, valor, beneficiario, descricao, hash);
+    values.push("(?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+    params.push(data, valor, beneficiario, descricao, null, null, hash);
   }
   try {
     const [result] = await pool.query(
-      `INSERT IGNORE INTO despesas (data_despesa, valor, beneficiario, descricao, hash, created_at, updated_at) VALUES ${values.join(", ")}`,
+      `INSERT IGNORE INTO despesas (data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, hash, created_at, updated_at) VALUES ${values.join(", ")}`,
       params
     );
     const inserted = result?.affectedRows ?? 0;
@@ -1683,7 +1705,15 @@ app.put("/api/inscritos/:id", requireAuth, async (req, res) => {
     }
     const [result] = await pool.query(
       "UPDATE inscritos SET cpf = ?, rua = ?, numero = ?, telefone = ?, email = ?, profissao = ?, updated_at = NOW() WHERE idinscritos = ?",
-      [cpf || null, rua || null, numero || null, telefone || null, email || null, profissao || null, id]
+      [
+        normalizedCpf || null,
+        rua || null,
+        numero || null,
+        telefone || null,
+        normalizedEmail || null,
+        profissao || null,
+        id
+      ]
     );
     if (result.affectedRows === 0) {
       res.status(404).json({ error: "Inscrito nao encontrado" });
@@ -1732,22 +1762,22 @@ app.post("/api/inscritos", requireAuth, async (req, res) => {
       "INSERT INTO inscritos (nome, cpf, rua, numero, telefone, email, profissao, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
       [
         String(nome).trim(),
-        cpf || null,
+        normalizedCpf || null,
         rua || null,
         numero || null,
         telefone || null,
-        email || null,
+        normalizedEmail || null,
         profissao || null
       ]
     );
     res.status(201).json({
       idinscritos: result.insertId,
       nome: String(nome).trim(),
-      cpf: cpf || null,
+      cpf: normalizedCpf || null,
       rua: rua || null,
       numero: numero || null,
       telefone: telefone || null,
-      email: email || null,
+      email: normalizedEmail || null,
       profissao: profissao || null
     });
   } catch (err) {

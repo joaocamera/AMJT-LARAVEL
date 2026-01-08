@@ -1,0 +1,272 @@
+DANFSe v1.0
+Documento Auxiliar da NFS-e
+Chave de Acesso da NFS-e
+
+35498052203995078000181000000000023925077818410219
+
+Número da NFS-e
+
+Competência da NFS-e
+
+Número da DPS
+
+Série da DPS
+
+239
+
+Data e Hora da emissão da NFS-e
+
+18/07/2025
+
+258
+
+EMITENTE DA NFS-e
+Prestador do Serviço
+
+18/07/2025 10:42:21
+
+Data e Hora da emissão da DPS
+
+900
+
+18/07/2025 10:42:21
+
+A autenticidade desta NFS-e pode ser verificada
+pela leitura deste código QR ou pela consulta da
+chave de acesso no portal nacional da NFS-e
+
+CNPJ / CPF / NIF
+
+Inscrição Municipal
+
+Telefone
+
+03.995.078/0001-81
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+Simples Nacional na Data de Competência
+
+Regime de Apuração Tributária pelo SN
+
+JULIO C BARDELLA
+
+(17) 9108-5959
+
+JULIOBARDELLA@GMAIL.COM
+
+RUBIAO JUNIOR, 3207, CENTRO
+
+São José do Rio Preto - SP
+
+Optante - Microempreendedor Individual (MEI)
+
+-
+
+TOMADOR DO SERVIÇO
+
+Inscrição Municipal
+
+CNPJ / CPF / NIF
+
+05.152.486/0001-05
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II
+
+CEP
+
+15010-090
+
+Telefone
+
+-
+
+-
+
+JOSE ELIAS ABUD, 225, JARDIM TARRAF II
+
+São José do Rio Preto - SP
+
+CEP
+
+15092-490
+
+INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e
+SERVIÇO PRESTADO
+Código de Tributação Nacional
+
+14.01.01 - Lubrificação, limpeza,
+lustração, revisão, carga e recarg...
+
+Código de Tributação Municipal
+
+Local da Prestação
+
+-
+
+São José do Rio Preto - SP
+
+País da Prestação
+
+-
+
+Descrição do Serviço
+
+SERVIÇO DE TROCA DE FECHADURA
+TRIBUTAÇÃO MUNICIPAL
+Tributação do ISSQN
+
+País Resultado da Prestação do Serviço
+
+-
+
+São José do Rio Preto - SP
+
+Nenhum
+
+Tipo de Imunidade
+
+Suspensão da Exigibilidade do ISSQN
+
+Número Processo Suspensão
+
+Benefício Municipal
+
+Valor do Serviço
+
+Desconto Incondicionado
+
+Total Deduções/Reduções
+
+-
+
+-
+
+BC ISSQN
+
+Alíquota Aplicada
+
+Retenção do ISSQN
+
+ISSQN Apurado
+
+IRRF
+
+CP
+
+CSLL
+
+PIS
+
+COFINS
+
+Retenção do PIS/COFINS
+
+TOTAL TRIBUTAÇÃO FEDERAL
+
+Valor do Serviço
+
+Desconto Condicionado
+
+Desconto Incondicionado
+
+ISSQN Retido
+
+IRRF, CP,CSLL - Retidos
+
+PIS/COFINS Retidos
+
+Operação Tributável
+
+-
+
+Município de Incidência do ISSQN
+
+Não
+
+R$ 170,00
+
+-
+
+-
+
+-
+
+-
+
+Não Retido
+
+Regime Especial de Tributação
+
+-
+
+Cálculo do BM
+
+-
+
+TRIBUTAÇÃO FEDERAL
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+VALOR TOTAL DA NFS-E
+R$ 170,00
+
+R$
+
+R$ 0,00
+
+R$
+
+-
+
+Valor Líquido da NFS-e
+
+-
+
+R$ 170,00
+
+TOTAIS APROXIMADOS DOS TRIBUTOS
+Federais
+
+-
+
+INFORMAÇÕES COMPLEMENTARES
+
+Estaduais
+
+-
+
+Municipais
+
+-
+
+

@@ -1,0 +1,43 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 30,00
+
+Transferido em 14/08/2025 as 13:04:29
+
+marmita faxineira
+
+Comprovante para simples
+conferencia gerado em
+
+14/08/2025 as 13:04:30
+
+Recebedor
+
+Nome
+
+SUELI DOS ANJOS PAES
+
+CPF/CNPJ
+*** 418.448-**
+
+instituicao
+
+CAIXA ECONOMICA FEDERAL
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

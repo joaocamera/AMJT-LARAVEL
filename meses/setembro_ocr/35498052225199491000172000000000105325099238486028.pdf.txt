@@ -1,0 +1,270 @@
+DANFSe v1.0
+Documento Auxiliar da NFS-e
+Chave de Acesso da NFS-e
+
+35498052225199491000172000000000105325099238486028
+
+Número da NFS-e
+
+Competência da NFS-e
+
+Número da DPS
+
+Série da DPS
+
+1053
+
+Data e Hora da emissão da NFS-e
+
+03/09/2025
+
+1102
+
+EMITENTE DA NFS-e
+Prestador do Serviço
+
+03/09/2025 08:53:44
+
+Data e Hora da emissão da DPS
+
+900
+
+03/09/2025 08:53:44
+
+A autenticidade desta NFS-e pode ser verificada
+pela leitura deste código QR ou pela consulta da
+chave de acesso no portal nacional da NFS-e
+
+CNPJ / CPF / NIF
+
+Inscrição Municipal
+
+Telefone
+
+25.199.491/0001-72
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+Simples Nacional na Data de Competência
+
+Regime de Apuração Tributária pelo SN
+
+JEFERSON PEREIRA DE CARVALHO 32952573883
+
+(17) 9132-4656
+
+jebassitt@yahoo.com.br
+
+BRIGADEIRO FARIA LIMA, 5913, VILA SAO JOSE
+
+São José do Rio Preto - SP
+
+Optante - Microempreendedor Individual (MEI)
+
+-
+
+TOMADOR DO SERVIÇO
+
+Inscrição Municipal
+
+CNPJ / CPF / NIF
+
+05.152.486/0001-05
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II
+
+CEP
+
+15090-000
+
+Telefone
+
+-
+
+-
+
+JOSE ELIAS ABUD, 225, JARDIM TARRAF II
+
+São José do Rio Preto - SP
+
+CEP
+
+15092-490
+
+INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e
+SERVIÇO PRESTADO
+Código de Tributação Nacional
+
+Código de Tributação Municipal
+
+Local da Prestação
+
+24.01.01 - Serviços de chaveiros,
+confecção de carimbos e congêneres.
+
+São José do Rio Preto - SP
+
+País da Prestação
+
+-
+
+Descrição do Serviço
+
+01 - TRAVA TETRA COM 02 CÓPIAS 3F 40MM = R$ 80,00
+TRIBUTAÇÃO MUNICIPAL
+Tributação do ISSQN
+
+País Resultado da Prestação do Serviço
+
+-
+
+São José do Rio Preto - SP
+
+Nenhum
+
+Tipo de Imunidade
+
+Suspensão da Exigibilidade do ISSQN
+
+Número Processo Suspensão
+
+Benefício Municipal
+
+Valor do Serviço
+
+Desconto Incondicionado
+
+Total Deduções/Reduções
+
+-
+
+-
+
+BC ISSQN
+
+Alíquota Aplicada
+
+Retenção do ISSQN
+
+ISSQN Apurado
+
+IRRF
+
+CP
+
+CSLL
+
+PIS
+
+COFINS
+
+Retenção do PIS/COFINS
+
+TOTAL TRIBUTAÇÃO FEDERAL
+
+Valor do Serviço
+
+Desconto Condicionado
+
+Desconto Incondicionado
+
+ISSQN Retido
+
+IRRF, CP,CSLL - Retidos
+
+PIS/COFINS Retidos
+
+Operação Tributável
+
+-
+
+Município de Incidência do ISSQN
+
+Não
+
+R$ 80,00
+
+-
+
+-
+
+-
+
+-
+
+Não Retido
+
+Regime Especial de Tributação
+
+-
+
+Cálculo do BM
+
+-
+
+TRIBUTAÇÃO FEDERAL
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+VALOR TOTAL DA NFS-E
+R$ 80,00
+
+R$
+
+R$ 0,00
+
+R$
+
+-
+
+Valor Líquido da NFS-e
+
+-
+
+R$ 80,00
+
+TOTAIS APROXIMADOS DOS TRIBUTOS
+Federais
+
+-
+
+INFORMAÇÕES COMPLEMENTARES
+
+Estaduais
+
+-
+
+Municipais
+
+-
+
+

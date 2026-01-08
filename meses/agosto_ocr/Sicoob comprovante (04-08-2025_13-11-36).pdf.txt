@@ -1,0 +1,42 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 1.640,00
+
+Transferido em 04/08/2025 as 13:11:33
+
+instalacao eletrica
+
+Comprovante para simples
+conferencia gerado em
+
+04/08/2025 as 13:11:34
+
+Recebedor
+
+Nome
+Mateus Rossi
+
+CPF/CNPSJ
+#** 283.618-**
+
+instituicao
+
+MERCADO PAGO IP LTDA.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, LogOut, PencilLine, Search } from "lucide-react";
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  LogOut,
+  PencilLine,
+  Search
+} from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import logo from "./logo.jpeg";
 import qrCode from "./qr-code.svg";
 
@@ -118,6 +128,251 @@ function buildReportPdf({ tipo, mesLabel, rows, columns, rowMapper }) {
   });
 
   return doc.output("blob");
+}
+
+function buildBalancetePdf({ mesKey, mesLabel, openingBalance, creditosRows, despesasRows }) {
+  const generatedAt = new Date().toLocaleDateString("pt-BR");
+  const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const marginX = 40;
+  let cursorY = 48;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text(ASSOCIATION_NAME, marginX, cursorY);
+  cursorY += 18;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(`Balancete - ${mesLabel || "-"}`, marginX, cursorY);
+  cursorY += 14;
+  doc.text(`Gerado em: ${generatedAt}`, marginX, cursorY);
+  cursorY += 18;
+
+  const creditosTotal = creditosRows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+  const despesasTotal = despesasRows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+  const saldoFinal = Number((openingBalance + creditosTotal - despesasTotal).toFixed(2));
+  const [year, month] = (mesKey || "").split("-");
+  const monthLabel = month && year ? `${month}/${year}` : "";
+  const lastDayDate =
+    year && month ? new Date(Number(year), Number(month), 0) : null;
+  const lastDayLabel = lastDayDate
+    ? lastDayDate.toLocaleDateString("pt-BR")
+    : "";
+
+  const resumoRows = [
+    {
+      label: `Saldo do extrato em 01/${monthLabel || "-"}`,
+      value: openingBalance,
+      type: "saldo"
+    },
+    { label: "Total de creditos do mes", value: creditosTotal, type: "credito" },
+    { label: "Total de debitos do mes", value: despesasTotal, type: "debito" },
+    {
+      label: `Saldo final em ${lastDayLabel || "-"}`,
+      value: saldoFinal,
+      type: "saldo"
+    }
+  ];
+
+  doc.autoTable({
+    startY: cursorY,
+    head: [["Descricao", "Valor"]],
+    body: resumoRows.map((row) => [row.label, formatCurrency(row.value)]),
+    styles: { fontSize: 9, cellPadding: 4, textColor: 40 },
+    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    columnStyles: { 1: { halign: "right" } },
+    didParseCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 1) return;
+      const meta = resumoRows[data.row.index];
+      if (!meta) return;
+      if (meta.type === "debito") {
+        data.cell.styles.textColor = [180, 0, 0];
+        return;
+      }
+      if (meta.type === "saldo" && meta.value < 0) {
+        data.cell.styles.textColor = [180, 0, 0];
+      }
+    }
+  });
+
+  cursorY = (doc.lastAutoTable?.finalY || cursorY) + 18;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Relatorio simplificado de creditos", marginX, cursorY);
+  cursorY += 10;
+
+  const creditoColumns = ["Data", "Pagador", "Descricao", "Associado", "Valor"];
+  const creditoRows = creditosRows.map((row) => {
+    const candidatesLabel = row.candidatos?.length
+      ? row.candidatos
+          .map((cand) => `${cand.nome} (${Math.round((cand.score || 0) * 100)}%)`)
+          .join(" | ")
+      : "";
+    let associadoLabel = row.associado_nome || "-";
+    if (row.match_status === "ambiguous") {
+      associadoLabel = candidatesLabel || "Ambiguo";
+    } else if (row.match_status === "unmatched") {
+      associadoLabel = "Nao encontrado";
+    }
+    return [
+      formatDateDisplay(row.data_credito),
+      row.pagador_nome || row.pagador_documento || "-",
+      row.descricao || "-",
+      associadoLabel,
+      formatCurrency(row.valor)
+    ];
+  });
+  const creditoEmpty = new Array(creditoColumns.length).fill("");
+  creditoEmpty[1] = "Nenhum registro";
+  doc.autoTable({
+    startY: cursorY,
+    head: [creditoColumns],
+    body: creditoRows.length ? creditoRows : [creditoEmpty],
+    styles: { fontSize: 9, cellPadding: 4, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: { [creditoColumns.length - 1]: { halign: "right" } }
+  });
+
+  cursorY = (doc.lastAutoTable?.finalY || cursorY) + 14;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(
+    `Total de creditos: ${formatCurrency(creditosTotal)}`,
+    marginX,
+    cursorY
+  );
+
+  cursorY += 18;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Relatorio simplificado de debitos", marginX, cursorY);
+  cursorY += 10;
+
+  const debitoColumns = ["Data", "Beneficiario", "NF", "Descricao", "Valor"];
+  const debitoRows = despesasRows.map((row) => [
+    formatDateDisplay(row.data_despesa),
+    row.beneficiario || "-",
+    row.numero_nota || "-",
+    row.descricao || "-",
+    formatCurrency(row.valor)
+  ]);
+  const debitoEmpty = new Array(debitoColumns.length).fill("");
+  debitoEmpty[1] = "Nenhum registro";
+  doc.autoTable({
+    startY: cursorY,
+    head: [debitoColumns],
+    body: debitoRows.length ? debitoRows : [debitoEmpty],
+    styles: { fontSize: 9, cellPadding: 4, textColor: [180, 0, 0] },
+    headStyles: { fillColor: [30, 64, 175], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    columnStyles: { [debitoColumns.length - 1]: { halign: "right" } }
+  });
+
+  cursorY = (doc.lastAutoTable?.finalY || cursorY) + 14;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(
+    `Total de debitos: ${formatCurrency(despesasTotal)}`,
+    marginX,
+    cursorY
+  );
+
+  return doc.output("blob");
+}
+
+async function mergeBalanceteAnexos({ baseBlob, despesasRows, mesLabel }) {
+  const baseBytes = await baseBlob.arrayBuffer();
+  const baseDoc = await PDFDocument.load(baseBytes);
+  const mergedDoc = await PDFDocument.create();
+  const basePages = await mergedDoc.copyPages(baseDoc, baseDoc.getPageIndices());
+  basePages.forEach((page) => mergedDoc.addPage(page));
+
+  const anexos = despesasRows.flatMap((row) =>
+    Array.isArray(row.anexos) ? row.anexos : []
+  );
+  if (!anexos.length) {
+    const mergedBytes = await mergedDoc.save();
+    return new Blob([mergedBytes], { type: "application/pdf" });
+  }
+
+  const baseSize = basePages[0]?.getSize?.() || { width: 595.28, height: 841.89 };
+  const font = await mergedDoc.embedFont(StandardFonts.Helvetica);
+  const titlePage = mergedDoc.addPage([baseSize.width, baseSize.height]);
+  titlePage.drawText(`Anexos de despesas - ${mesLabel || "-"}`, {
+    x: 40,
+    y: baseSize.height - 60,
+    size: 14,
+    font
+  });
+  titlePage.drawText(`Total de anexos: ${anexos.length}`, {
+    x: 40,
+    y: baseSize.height - 80,
+    size: 10,
+    font
+  });
+
+  for (const anexo of anexos) {
+    const rawUrl = anexo?.url || "";
+    if (!rawUrl) continue;
+    const url = rawUrl.startsWith("http") ? rawUrl : `${API_BASE}${rawUrl}`;
+    const mimeType = String(anexo?.mimeType || "").toLowerCase();
+    const lowerUrl = rawUrl.toLowerCase();
+    try {
+      const response = await fetch(url);
+      if (!response.ok) continue;
+      const buffer = await response.arrayBuffer();
+      const isPdf = mimeType.includes("pdf") || lowerUrl.endsWith(".pdf");
+      const isPng = mimeType.includes("png") || lowerUrl.endsWith(".png");
+      const isJpg =
+        mimeType.includes("jpeg") ||
+        mimeType.includes("jpg") ||
+        lowerUrl.endsWith(".jpg") ||
+        lowerUrl.endsWith(".jpeg");
+      const isImage = mimeType.startsWith("image/") || isPng || isJpg;
+      if (isPdf) {
+        const attachmentDoc = await PDFDocument.load(buffer);
+        const pages = attachmentDoc.getPages();
+        for (const attachmentPage of pages) {
+          const embeddedPage = await mergedDoc.embedPage(attachmentPage);
+          const page = mergedDoc.addPage([baseSize.width, baseSize.height]);
+          const margin = 40;
+          const maxWidth = baseSize.width - margin * 2;
+          const maxHeight = baseSize.height - margin * 2;
+          const scale = Math.min(
+            maxWidth / embeddedPage.width,
+            maxHeight / embeddedPage.height,
+            1
+          );
+          const drawWidth = embeddedPage.width * scale;
+          const drawHeight = embeddedPage.height * scale;
+          const x = (baseSize.width - drawWidth) / 2;
+          const y = (baseSize.height - drawHeight) / 2;
+          page.drawPage(embeddedPage, { x, y, width: drawWidth, height: drawHeight });
+        }
+      } else if (isImage) {
+        if (!isPng && !isJpg) continue;
+        const image = isPng
+          ? await mergedDoc.embedPng(buffer)
+          : await mergedDoc.embedJpg(buffer);
+        const page = mergedDoc.addPage([baseSize.width, baseSize.height]);
+        const margin = 40;
+        const maxWidth = baseSize.width - margin * 2;
+        const maxHeight = baseSize.height - margin * 2;
+        const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+        const drawWidth = image.width * scale;
+        const drawHeight = image.height * scale;
+        const x = (baseSize.width - drawWidth) / 2;
+        const y = (baseSize.height - drawHeight) / 2;
+        page.drawImage(image, { x, y, width: drawWidth, height: drawHeight });
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+
+  const mergedBytes = await mergedDoc.save();
+  return new Blob([mergedBytes], { type: "application/pdf" });
 }
 
 const MONTH_LABELS = [
@@ -633,6 +888,17 @@ function DespesaModal({
             />
           </div>
           <div>
+            <label className="text-sm font-medium text-slate-600">
+              Numero da nota
+            </label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.numero_nota}
+              onChange={(event) => onChange("numero_nota", event.target.value)}
+              placeholder="Ex: 12345"
+            />
+          </div>
+          <div>
             <label className="text-sm font-medium text-slate-600">Valor</label>
             <input
               type="number"
@@ -642,6 +908,17 @@ function DespesaModal({
               onChange={(event) => onChange("valor", event.target.value)}
               placeholder="0,00"
               required
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-600">
+              Chave NFE
+            </label>
+            <input
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              value={form.chave_nfe}
+              onChange={(event) => onChange("chave_nfe", event.target.value)}
+              placeholder="44 digitos"
             />
           </div>
           <div className="md:col-span-2">
@@ -2904,7 +3181,9 @@ function Dashboard({ token, onLogout }) {
     data_despesa: "",
     valor: "",
     beneficiario: "",
-    descricao: ""
+    descricao: "",
+    numero_nota: "",
+    chave_nfe: ""
   });
   const [despesasEditing, setDespesasEditing] = useState(null);
   const [despesasFiles, setDespesasFiles] = useState([]);
@@ -2939,6 +3218,8 @@ function Dashboard({ token, onLogout }) {
   const [creditosMonthRows, setCreditosMonthRows] = useState([]);
   const [resumoMensal, setResumoMensal] = useState([]);
   const [resumoLoading, setResumoLoading] = useState(false);
+  const [balanceteBusyMonth, setBalanceteBusyMonth] = useState("");
+  const [balanceteError, setBalanceteError] = useState("");
   const associadosMap = useMemo(() => {
     const map = {};
     rows.forEach((item) => {
@@ -2988,6 +3269,14 @@ function Dashboard({ token, onLogout }) {
     () => resumoMensal.slice(0, resumoDisplayCount),
     [resumoMensal, resumoDisplayCount]
   );
+  const resumoSaldoBase = useMemo(() => {
+    return resumoMensal
+      .map((item) => ({
+        mes: item.mes,
+        saldo: Number(item.creditos_total || 0) - Number(item.despesas_total || 0)
+      }))
+      .sort((a, b) => a.mes.localeCompare(b.mes));
+  }, [resumoMensal]);
 
   useEffect(() => {
     if (adminTab !== "despesas") return;
@@ -3133,6 +3422,58 @@ function Dashboard({ token, onLogout }) {
     }
   }
 
+  function getSaldoInicial(monthKey) {
+    if (!monthKey) return 0;
+    return resumoSaldoBase.reduce((sum, item) => {
+      if (!item.mes || item.mes >= monthKey) return sum;
+      return sum + item.saldo;
+    }, 0);
+  }
+
+  async function handleBalancete(monthKey) {
+    if (!monthKey) return;
+    setBalanceteError("");
+    setBalanceteBusyMonth(monthKey);
+    try {
+      const [creditosResponse, despesasResponse] = await Promise.all([
+        apiFetch(`/api/creditos?month=${monthKey}`, {}, token),
+        apiFetch(`/api/despesas?month=${monthKey}`, {}, token)
+      ]);
+      if (!creditosResponse.ok || !despesasResponse.ok) {
+        throw new Error("Falha ao carregar dados do balancete.");
+      }
+      const [creditosData, despesasData] = await Promise.all([
+        creditosResponse.json(),
+        despesasResponse.json()
+      ]);
+      const openingBalance = getSaldoInicial(monthKey);
+      const pdfBlob = buildBalancetePdf({
+        mesKey: monthKey,
+        mesLabel: formatMonthYear(monthKey),
+        openingBalance,
+        creditosRows: Array.isArray(creditosData) ? creditosData : [],
+        despesasRows: Array.isArray(despesasData) ? despesasData : []
+      });
+      const mergedBlob = await mergeBalanceteAnexos({
+        baseBlob: pdfBlob,
+        despesasRows: Array.isArray(despesasData) ? despesasData : [],
+        mesLabel: formatMonthYear(monthKey)
+      });
+      const url = URL.createObjectURL(mergedBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `balancete-${monthKey}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setBalanceteError("Nao foi possivel gerar o balancete.");
+    } finally {
+      setBalanceteBusyMonth("");
+    }
+  }
+
   function openResumoMonth(key) {
     if (resumoMonthKey === key) {
       setResumoMonthKey("");
@@ -3151,7 +3492,9 @@ function Dashboard({ token, onLogout }) {
         data_despesa: formatDateInput(safeDate),
         valor: row.valor,
         beneficiario: row.beneficiario || "",
-        descricao: row.descricao || ""
+        descricao: row.descricao || "",
+        numero_nota: row.numero_nota || "",
+        chave_nfe: row.chave_nfe || ""
       });
       setDespesasEditing(row);
       setDespesasExistingAnexos(Array.isArray(row.anexos) ? row.anexos : []);
@@ -3162,7 +3505,9 @@ function Dashboard({ token, onLogout }) {
         data_despesa: formatDateInput(new Date()),
         valor: "",
         beneficiario: "",
-        descricao: ""
+        descricao: "",
+        numero_nota: "",
+        chave_nfe: ""
       });
       setDespesasEditing(null);
       setDespesasExistingAnexos([]);
@@ -3237,6 +3582,8 @@ function Dashboard({ token, onLogout }) {
       formData.append("valor", String(valorNum));
       formData.append("beneficiario", despesasForm.beneficiario);
       formData.append("descricao", despesasForm.descricao || "");
+      formData.append("numero_nota", despesasForm.numero_nota || "");
+      formData.append("chave_nfe", despesasForm.chave_nfe || "");
       if (despesasRemoveAnexos.length) {
         formData.append("removeAnexos", JSON.stringify(despesasRemoveAnexos));
       }
@@ -3766,6 +4113,9 @@ function Dashboard({ token, onLogout }) {
               ) : null}
             </div>
           </div>
+          {balanceteError ? (
+            <p className="mt-3 text-sm text-rose-600">{balanceteError}</p>
+          ) : null}
           {resumoCards.length === 0 ? (
             <p className="mt-4 text-sm text-slate-500">
               Nenhum resumo disponivel ainda.
@@ -3816,24 +4166,52 @@ function Dashboard({ token, onLogout }) {
                       <span>Despesas: {item.despesas_count}</span>
                     </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-4 flex flex-nowrap gap-2">
                     <button
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                      className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
                       onClick={(event) => {
                         event.stopPropagation();
                         openCreditosMonth(item.mes);
                       }}
+                      title="Receitas"
+                      aria-label="Receitas"
                     >
-                      Receitas
+                      <ArrowUpCircle className="h-4 w-4" />
+                      <span className="sm:hidden">Receitas</span>
                     </button>
                     <button
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                      className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
                       onClick={(event) => {
                         event.stopPropagation();
                         openMonthDetails(item.mes);
                       }}
+                      title="Despesas"
+                      aria-label="Despesas"
                     >
-                      Despesas
+                      <ArrowDownCircle className="h-4 w-4" />
+                      <span className="sm:hidden">Despesas</span>
+                    </button>
+                    <button
+                      className={`flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 ${
+                        balanceteBusyMonth === item.mes
+                          ? "cursor-not-allowed opacity-60"
+                          : ""
+                      }`}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (balanceteBusyMonth === item.mes) return;
+                        handleBalancete(item.mes);
+                      }}
+                      title="Balancete"
+                      aria-label="Balancete"
+                    >
+                      {balanceteBusyMonth === item.mes ? (
+                        <span className="font-semibold">...</span>
+                      ) : (
+                        <FileText className="h-4 w-4" />
+                      )}
+                      <span className="sm:hidden">Balancete</span>
                     </button>
                   </div>
                 </div>

@@ -1,0 +1,253 @@
+237-2
+
+Comprovante de Entrega
+
+Beneficiário
+
+Agência / Código Beneficiário
+
+J A SILVA COM. DE MAT P/ CONST LTDA
+
+0596-7/0000560-6
+
+Pagador
+58520 - ASSOCIACAO DOS MORADORES DO JD.TARRAF 2
+
+Nosso Número
+
+Vencimento
+
+Valor do Documento
+
+Número do Documento
+
+Espécie
+
+13/10/2025 68021-1/1-1
+Recebi(emos) o bloqueto
+
+09/00000034722-4
+
+R$
+
+Data
+
+309,50
+
+Assinatura
+
+Motivos de não entrega
+( ) Mudou-se
+( ) Endereço insuficiente
+( ) Recusado
+
+( ) Não existe n.º indicado
+
+( ) Desconhecido
+
+( ) Falecido
+
+( ) Ausente
+
+( ) Outros (especificar)
+
+( ) Não procurado
+
+________________
+
+Data
+
+Entregador
+
+Local de Pagamento
+
+Data do Processamento
+
+PAGAVEL PREFERENCIALMENTE NAS AGENCIAS BRADESCO
+
+03/10/2025
+
+"
+
+237-2
+
+Recibo do Pagador
+
+Local de Pagamento
+
+Vencimento
+
+PAGAVEL PREFERENCIALMENTE NAS AGENCIAS BRADESCO
+
+13/10/2025
+
+Beneficiário
+
+Agência / Código Beneficiário
+
+J A SILVA COM. DE MAT P/ CONST LTDA - CNPJ: 58072836000181 END.: AV. FORT ERNESTO VETORASSO, 1320 €23 JD ATLÂNTICA 15041-000
+Data do Documento
+
+03/10/2025
+Uso do Banco
+
+Número do Documento
+
+Espécie Doc.
+
+68021-1/1-1
+Carteira
+
+Espécie
+
+009
+
+Aceite
+
+DM
+
+Data do Processamento
+
+N
+
+03/10/2025
+
+Quantidade
+
+Valor
+
+0596-7/0000560-6
+
+Nosso Número
+
+09/00000034722-4
+( = ) Valor do Documento
+
+x
+
+R$
+
+309,50
+
+Instruções (Todas as informações deste bloqueto são de exclusiva responsabilidade do beneficiário.)
+
+( - ) Desconto / Abatimento
+
+Protestar em 18/10/2025
+Cobrar juros de R$ 0,52 por dia de atraso
+(+) Multa por atraso de R$ 6,19
+Nº N.F.: 68021
+
+( + ) Mora / Multa
+
+( = ) Valor Cobrado
+
+CPF / CNPJ
+
+Pagador: 58520 - ASSOCIACAO DOS MORADORES DO JD.TARRAF 2
+RUA JOSE ELIAS ABUD, 225
+15092-490 JARDIM TARRAF II SAO JOSE DO RIO PRETO
+Sacador/Avalista:
+
+CNPJ: 05.152.486/0001-05
+Código de Baixa
+
+SP
+
+09/00000034722-4
+Autenticação Mecânica
+
+Recebimento através do cheque número
+do banco
+Esta quitação só terá validade após o pagamento do cheque pelo
+banco pagador.
+
+"
+
+237-2
+
+23790.59609 90000.003476 22000.056006 1 12330000030950
+
+Local de Pagamento
+
+Vencimento
+
+PAGAVEL PREFERENCIALMENTE NAS AGENCIAS BRADESCO
+
+13/10/2025
+
+Beneficiário
+
+Agência / Código Beneficiário
+
+J A SILVA COM. DE MAT P/ CONST LTDA - CNPJ: 58072836000181 - AV. FORT ERNESTO VETORASSO, 1320 €23 JD ATLÂNTICA 15041-000 0596-7/0000560-6
+Data do Documento
+
+03/10/2025
+Uso do Banco
+
+Número do Documento
+
+Espécie Doc.
+
+68021-1/1-1
+Carteira
+
+009
+
+Espécie
+
+DM
+
+Aceite
+
+Data do Processamento
+
+N
+
+Nosso Número
+
+03/10/2025
+
+Quantidade
+
+Valor
+
+09/00000034722-4
+( = ) Valor do Documento
+
+x
+
+R$
+
+309,50
+
+Instruções (Todas as informações deste bloqueto são de exclusiva responsabilidade do beneficiário.)
+
+( - ) Desconto / Abatimento
+
+Protestar em 18/10/2025
+Cobrar juros de R$ 0,52 por dia de atraso
+(+) Multa por atraso de R$ 6,19
+Nº N.F.: 68021
+
+( + ) Mora / Multa
+
+( = ) Valor Cobrado
+
+Pagador: 58520 - ASSOCIACAO DOS MORADORES DO JD.TARRAF 2
+RUA JOSE ELIAS ABUD, 225
+15092-490 JARDIM TARRAF II SAO JOSE DO RIO PRETO
+Sacador/Avalista:
+
+CPF / CNPJ
+
+CNPJ: 05.152.486/0001-05
+SP
+
+Código de Baixa
+
+09/00000034722-4
+Autenticação Mecânica - Ficha de Compensação
+
+

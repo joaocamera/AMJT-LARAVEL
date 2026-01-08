@@ -1,0 +1,276 @@
+DANFSe v1.0
+Documento Auxiliar da NFS-e
+Chave de Acesso da NFS-e
+
+35498052231819114000191000000000012525072730435213
+
+Número da NFS-e
+
+Competência da NFS-e
+
+Número da DPS
+
+Série da DPS
+
+125
+
+Data e Hora da emissão da NFS-e
+
+22/07/2025
+
+144
+
+EMITENTE DA NFS-e
+Prestador do Serviço
+
+22/07/2025 09:29:11
+
+Data e Hora da emissão da DPS
+
+900
+
+22/07/2025 09:29:11
+
+A autenticidade desta NFS-e pode ser verificada
+pela leitura deste código QR ou pela consulta da
+chave de acesso no portal nacional da NFS-e
+
+CNPJ / CPF / NIF
+
+Inscrição Municipal
+
+Telefone
+
+31.819.114/0001-91
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+Simples Nacional na Data de Competência
+
+Regime de Apuração Tributária pelo SN
+
+31.819.114 FABIANA CAMOLEZI
+
+(17) 9132-0600
+
+CONTATO@FABIANAEVENTOS.COM.BR
+
+ANTONIO DIAS, 851, JARDIM SAO MARCO
+
+São José do Rio Preto - SP
+
+Optante - Microempreendedor Individual (MEI)
+
+-
+
+TOMADOR DO SERVIÇO
+
+Inscrição Municipal
+
+CNPJ / CPF / NIF
+
+05.152.486/0001-05
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II
+
+CEP
+
+15081-470
+
+Telefone
+
+-
+
+-
+
+JOSE ELIAS ABUD, 225, JARDIM TARRAF II
+
+São José do Rio Preto - SP
+
+CEP
+
+15092-490
+
+INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e
+SERVIÇO PRESTADO
+Código de Tributação Nacional
+
+17.11.01 - Organização de festas e
+recepções.
+
+Código de Tributação Municipal
+
+Local da Prestação
+
+-
+
+São José do Rio Preto - SP
+
+País da Prestação
+
+-
+
+Descrição do Serviço
+
+referente a locação de mesas e cadeiras para evento do dia 19/07/2025 na praça do tarraf 2
+Dados para Pagamento
+Banco: 0260 - Nu Pagamentos S.A.
+Agência: 0001 | Conta: 98894534-2
+Chave PIX (Conta PJ - NuBank): 31819114000191
+TRIBUTAÇÃO MUNICIPAL
+Tributação do ISSQN
+
+País Resultado da Prestação do Serviço
+
+-
+
+São José do Rio Preto - SP
+
+Nenhum
+
+Tipo de Imunidade
+
+Suspensão da Exigibilidade do ISSQN
+
+Número Processo Suspensão
+
+Benefício Municipal
+
+Valor do Serviço
+
+Desconto Incondicionado
+
+Total Deduções/Reduções
+
+-
+
+-
+
+BC ISSQN
+
+Alíquota Aplicada
+
+Retenção do ISSQN
+
+ISSQN Apurado
+
+IRRF
+
+CP
+
+CSLL
+
+PIS
+
+COFINS
+
+Retenção do PIS/COFINS
+
+TOTAL TRIBUTAÇÃO FEDERAL
+
+Valor do Serviço
+
+Desconto Condicionado
+
+Desconto Incondicionado
+
+ISSQN Retido
+
+IRRF, CP,CSLL - Retidos
+
+PIS/COFINS Retidos
+
+Operação Tributável
+
+-
+
+Município de Incidência do ISSQN
+
+Não
+
+R$ 650,00
+
+-
+
+-
+
+-
+
+-
+
+Não Retido
+
+Regime Especial de Tributação
+
+-
+
+Cálculo do BM
+
+-
+
+TRIBUTAÇÃO FEDERAL
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+VALOR TOTAL DA NFS-E
+R$ 650,00
+
+R$
+
+R$ 0,00
+
+R$
+
+-
+
+Valor Líquido da NFS-e
+
+-
+
+R$ 650,00
+
+TOTAIS APROXIMADOS DOS TRIBUTOS
+Federais
+
+-
+
+INFORMAÇÕES COMPLEMENTARES
+
+Estaduais
+
+-
+
+Municipais
+
+-
+
+

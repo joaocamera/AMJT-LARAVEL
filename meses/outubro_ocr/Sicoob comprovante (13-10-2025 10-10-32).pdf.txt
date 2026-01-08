@@ -1,0 +1,86 @@
+SICOOB
+SISTEMA DE COOPERATIVAS DE CRÉDITO DO BRASIL
+PLATAFORMA DE SERVIÇOS FINANCEIROS DO SICOOB – SISBR
+
+COMPROVANTE DE
+PAGAMENTO DE BOLETO
+
+13/10/2025
+
+Cooperativa:
+Conta:
+Tipo documento:
+
+10:10:26
+
+4030-4 / CCLA DA REG CEN E OESTE
+MIN LTDA - SICOOB DIVICRED
+789496 / ASSOCIACAO DOS
+MORADORES DO JARDIM TARRAF II
+Título
+Linha digitável do título
+
+23790.59609 90000.003476 22000.056006 1 12330000030950
+Número Documento:
+Nosso número:
+
+-
+
+Instituição Emissora:
+
+60746948
+
+Beneficiário
+Nome Fantasia:
+
+SILVA E SILVA
+
+Nome/Razão Social:
+
+SILVA E SILVA
+
+CPF/CNPJ:
+
+58.072.836/0001-81
+
+Pagador
+Nome Fantasia:
+Nome/Razão Social:
+
+ASSOCIACAO DOS MORADORES DO
+JD.TARRAF 2
+ASSOCIACAO DOS MORADORES DO
+JD.TARRAF 2
+
+CPF/CNPJ:
+
+05.152.486/0001-05
+
+Data de Vencimento:
+Pagamento:
+
+13/10/2025
+13/10/2025
+
+Realizado:
+Documento:
+Juros/Multa:
+Desconto/Abatimento:
+
+13/10/2025 10:09
+309,50
+0,00
+0,00
+
+Pago:
+Situação:
+N. Agendamento:
+
+309,50
+Efetivado
+20026760
+Autenticação
+
+af2546dd-964e-43a6-a15d-d49c1fe61ed6
+
+

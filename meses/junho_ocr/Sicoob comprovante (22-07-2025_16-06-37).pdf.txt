@@ -1,0 +1,40 @@
+WSsICOOB
+
+Comprovante de envio Pix
+
+RS 2.061,00
+
+Transferido em 22/07/2025 as 16:06:32
+
+G) Comprovante para simples
+conferéncia gerado em
+22/07/2025 as 16:06:35
+
+Recebedor
+
+Nome
+
+PAULO ROBERTO SCARANO
+
+CPF/CNPJ
+wwe 002.c/o"""
+
+instituicao
+
+CAIXA ECONOMICA FEDERAL
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF I!
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

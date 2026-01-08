@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 76,20
+
+Transferido em 12/08/2025 as 10:42:10
+
+Comprovante para simples
+conferencia gerado em
+12/08/2025 as 10:42:13
+
+Recebedor
+
+Nome
+
+AGROMETAL COMERCIAL DE
+FERRAGENS LTDA
+
+CPF/CNPSJ
+ee **Q 548/0001-**
+
+instituicao
+
+BCO BRADESCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+Instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+SE0000002404/79005|IPO303U4HXUF
+A21QD
+
+ID da Transacao:

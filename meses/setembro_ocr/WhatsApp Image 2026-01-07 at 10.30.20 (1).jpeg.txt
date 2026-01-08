@@ -1,0 +1,38 @@
+Docunento Auxiliar da Nota Fiscal
+de Consunidor Eletronica
+
+Detathe da Venda
+
+[001] 0789490027013 REFRIG COCA COLA 2L
+2,000 Un x
+
+[002] 0000000315395 SALGADU FRITO KG
+2,412 Kg X
+
+UOLOR TOTOL Rs
+VALOR A PAGAR RS
+FORMA DE PAGANENTO VALOR PAGO
+CARTEIRA DIGITAL
+
+Consuite pela Chave de Acesso eR:
+https://wuw.nfce. fazenda.sp.gov.br/consulta
+3525 0976 4304 3600 7184 6500 9000 0079 2410 0950 6118
+
+CONSUMIDOR - CNP,
+NFC-e n 7924 Serie
+Protoci
+
+Data
+
+12425525 - MARIANA PAULING COUTO GUIMARAES
+Trib aprox R$:19.16 Federal e R$:25.51 Estadual
+Fonte: IBPT/FECOMERCIG 60104
+** Senhores clientes en casos de troca ou
+reclanacao de algun iten e obrigatorio
+@ apresentacao deste cupon **
+
+COMPRA CARTEIRA DIGITAL
+VAL: RS 141,74
+poc:000165730420 E: 076430438007184
+(siTef)
+

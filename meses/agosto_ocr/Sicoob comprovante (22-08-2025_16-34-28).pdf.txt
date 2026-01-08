@@ -1,0 +1,47 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 61,70
+
+Transferido em 22/08/2025 as 16:34:22
+
+Comprovante para simples
+conferencia gerado em
+22/08/2025 as 16:34:24
+
+Recebedor
+
+Nome
+
+IRMAOS MUFFATOSA
+
+CPF/CNPS
+** **().438/0001-**
+
+instituicao
+
+ITAU UNIBANCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPSJ
+ex **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+SEQO000000071KLIL2S1WZ1W3EM8/7
+ZEPMS
+
+ID da Transacao:

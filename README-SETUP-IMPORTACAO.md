@@ -31,7 +31,9 @@ npm install
 
 ```bash
 mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/create_despesas.sql
+mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/create_creditos_match_map.sql
 mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/create_creditos.sql
+mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/alter_creditos_add_match_origin.sql
 mysql -u amjt2 -p -h localhost -P 3306 amjt2 < amjt2.sql
 mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/create_enquetes.sql
 mysql -u amjt2 -p -h localhost -P 3306 amjt2 < server/sql/create_mensalidades.sql

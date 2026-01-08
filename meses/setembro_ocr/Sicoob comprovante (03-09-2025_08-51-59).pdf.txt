@@ -1,0 +1,50 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 80,00
+
+Transferido em 03/09/2025 as 08:51:49
+
+Comprovante para simples
+conferencia gerado em
+03/09/2025 as 08:51:56
+
+Recebedor
+
+Nome
+
+JEFERSON PEREIRA DE CARVALHO
+329525/3883
+
+CPF/CNPSJ
+ee **Q_ 491/0001-**
+
+instituicao
+
+CIELO IP S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+Instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+CIELO2025090300000000000000003
+66804
+
+ID da Transacao:
+
+EO] 736516207509031151luzuBWewWFLecU

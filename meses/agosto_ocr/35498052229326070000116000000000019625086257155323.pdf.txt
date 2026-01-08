@@ -1,0 +1,272 @@
+DANFSe v1.0
+Documento Auxiliar da NFS-e
+Chave de Acesso da NFS-e
+
+35498052229326070000116000000000019625086257155323
+
+Número da NFS-e
+
+Competência da NFS-e
+
+Número da DPS
+
+Série da DPS
+
+196
+
+Data e Hora da emissão da NFS-e
+
+01/08/2025
+
+249
+
+EMITENTE DA NFS-e
+Prestador do Serviço
+
+01/08/2025 10:57:05
+
+Data e Hora da emissão da DPS
+
+900
+
+01/08/2025 10:57:05
+
+A autenticidade desta NFS-e pode ser verificada
+pela leitura deste código QR ou pela consulta da
+chave de acesso no portal nacional da NFS-e
+
+CNPJ / CPF / NIF
+
+Inscrição Municipal
+
+Telefone
+
+29.326.070/0001-16
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+Simples Nacional na Data de Competência
+
+Regime de Apuração Tributária pelo SN
+
+GRACIELA FERNANDA BRUNARI 28650297862
+
+(17) 3022-6619
+
+grabrunari@hotmail.com
+
+DOUTOR SOLON DA SILVA VARGINHA, 1475, vila novaes
+
+São José do Rio Preto - SP
+
+Optante - Microempreendedor Individual (MEI)
+
+-
+
+TOMADOR DO SERVIÇO
+
+Inscrição Municipal
+
+CNPJ / CPF / NIF
+
+05.152.486/0001-05
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II
+
+CEP
+
+15054-200
+
+Telefone
+
+-
+
+-
+
+JOSE ELIAS ABUD, 225, JARDIM TARRAF II
+
+São José do Rio Preto - SP
+
+CEP
+
+15092-490
+
+INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e
+SERVIÇO PRESTADO
+Código de Tributação Nacional
+
+14.13.02 - Serralheria.
+
+Código de Tributação Municipal
+
+Local da Prestação
+
+-
+
+São José do Rio Preto - SP
+
+País da Prestação
+
+-
+
+Descrição do Serviço
+
+SERVIÇO PRESTADO EM 2 BARRAS DE APOIO GRAPAS DE 1"1/2#18 150,00 CADA.
+TOTAL DE 300,00.
+TRIBUTAÇÃO MUNICIPAL
+Tributação do ISSQN
+
+País Resultado da Prestação do Serviço
+
+-
+
+São José do Rio Preto - SP
+
+Nenhum
+
+Tipo de Imunidade
+
+Suspensão da Exigibilidade do ISSQN
+
+Número Processo Suspensão
+
+Benefício Municipal
+
+Valor do Serviço
+
+Desconto Incondicionado
+
+Total Deduções/Reduções
+
+-
+
+-
+
+BC ISSQN
+
+Alíquota Aplicada
+
+Retenção do ISSQN
+
+ISSQN Apurado
+
+IRRF
+
+CP
+
+CSLL
+
+PIS
+
+COFINS
+
+Retenção do PIS/COFINS
+
+TOTAL TRIBUTAÇÃO FEDERAL
+
+Valor do Serviço
+
+Desconto Condicionado
+
+Desconto Incondicionado
+
+ISSQN Retido
+
+IRRF, CP,CSLL - Retidos
+
+PIS/COFINS Retidos
+
+Operação Tributável
+
+-
+
+Município de Incidência do ISSQN
+
+Não
+
+R$ 300,00
+
+-
+
+-
+
+-
+
+-
+
+Não Retido
+
+Regime Especial de Tributação
+
+-
+
+Cálculo do BM
+
+-
+
+TRIBUTAÇÃO FEDERAL
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+VALOR TOTAL DA NFS-E
+R$ 300,00
+
+R$
+
+R$ 0,00
+
+R$
+
+-
+
+Valor Líquido da NFS-e
+
+-
+
+R$ 300,00
+
+TOTAIS APROXIMADOS DOS TRIBUTOS
+Federais
+
+-
+
+INFORMAÇÕES COMPLEMENTARES
+
+Estaduais
+
+-
+
+Municipais
+
+-
+
+

@@ -1,0 +1,66 @@
+Mumcipio a6 320 Jos
+NE Nota Fiscal de DANFSe v1.0 z= Semetire ac
+Servico eletronica Documento Auxiliar da NFS-0 (iron noun rope sat |
+
+have de Acosso da NFS-0
+gt 354980522251994910001720000000001 18025128250613421
+Numero da NFS-© Competéncia da NFS: Data 6 Hora da emissso da NFS-0
+1180 2/12/2025 02/12/2025 14:05:40.
+‘Namero da OPS. ‘Série da OPS Dota © Hore da emisso do DPS
+1316 900 02/12/2025 14:05:40
+
+EMITENTE DANFS-© CNPITGPFTNIF Tnscrigdo Marielpel
+Prestador do Servigo 25,199,491/0001-72 :
+
+‘Nome / Nome Empresarial E-mail i
+JEFERSON PEREIRA DE CARVALHO 32952573883 jebassin@yahoo.com br i
+Endoropo Municipio cer
+BRIGADEIRO FARIA LIMA, 5913, VILA SAO JOSE ‘$80 José do Rio Preto - SP 15090-000
+‘Simples Nacional na Date de Competéncia Regime de Apuracso Tributéria pelo SN Paaly
+‘Optante - Microempreendedor Individual (ME!) 2
+TOMADOR DO SERVIGO ‘CNPI/ OPFTNIF Tnscrigbo Municipal
+05.152.486/0001-05 :
+Nome / Nome Empresarial E-mail
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF It
+Endereco Municipio
+JOSE ELIAS ABUD, 225, JARDIM TARRAF It ‘S80 José do Rio Preto - SP
+
+INTERMEDIARIO DO SERVICO NAO IDENTIFICADO NA NES-€
+
+‘SERVIGO PRESTADO
+C6digo de Tributagso Nacional Cédigo de Tributacdo Municipal Local da Prestagio
+
+24.01.01 - Servigos de chaveiros, = ‘S80 José do Rio Preto - SP
+‘confecgao de carimbos e congéneres.
+
+Desctigio do Servigo
+01 - COPIA CHAVE TETRA = R$ 30,00
+TRIBUTAGAO MUNICIPAL
+
+‘ributagio do ISSQN Pals Resultado da Prestaglo do Servico Municipio de Incidncio do ISSQN Regime Especial de Trbutarso
+Operagao Tributavel : ‘$80 José do Rilo Preto - SP Nenhum i \
+Tipo de Imunidade ‘Suspensbo da Exigibidade doISSQN _Namero Processo Suspenso Beneficio Municipal i
+: Nao. : : i i
+
+Valor do Servigo Desconto Incondicionado Total DedugSes/Redugbes
+R$ 30,00 - :
+Bc IssaN ‘Aliquota Aplicada Retengéo do ISON
+e 2 Nao Fetido
+
+4 TRIBUTAGAO FEDERAL
+IRRF oP cst
+
+q@ COFINS Reteng8o do PISICOFINS,
+
+}} VALOR TOTAL DA NFS-E
+Valor do Servigo Desconto Condicionado DDesconto Incondicionado 1SSQN Retido
+
+= RS30,00 RS RS |
+IRRF, CP,CSLL - Retidos PIS/COFINS Retidos Valor Liquido da NFS-©
+RS 0,00 : RS 30,00
+TOTAIS APROXIMADOS DOS TRIBUTOS
+
+Federals Esteduols Municipals i
+
+INFORMAGOES COMPLEMENTARES
+

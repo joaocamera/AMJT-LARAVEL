@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 298,80
+
+Transferido em 15/07/2025 as 09:56:13
+
+G) Comprovante para simples
+confereéncia gerado em
+15/07/2025 as 09:56:16
+
+Recebedor
+
+Nome
+
+PAGSEGURO INTERNET INSTITUICAO
+DE PAGAMENTO S.A.
+
+CPF/CNPJ
+we ee. /01/0001-"*
+
+Instituicao
+
+PAGSEGURO INTERNET IP S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+202507150955086569097260840049
+3/7
+
+ID da Transacao:

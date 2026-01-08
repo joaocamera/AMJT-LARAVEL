@@ -1,0 +1,95 @@
+SICOOB
+SISTEMA DE COOPERATIVAS DE CRÉDITO DO BRASIL
+PLATAFORMA DE SERVIÇOS FINANCEIROS DO SICOOB – SISBR
+
+COMPROVANTE DE
+PAGAMENTO DE BOLETO
+
+05/08/2025
+
+Cooperativa:
+Conta:
+Tipo documento:
+
+14:40:58
+
+4030-4 / CCLA DA REG CEN E OESTE
+MIN LTDA - SICOOB DIVICRED
+789496 / ASSOCIACAO DOS
+MORADORES DO JARDIM TARRAF II
+Título
+Linha digitável do título
+
+40390.00007 34765.411011 20630.782017 1 99930000090000
+Número Documento:
+Nosso número:
+
+-
+
+Instituição Emissora:
+
+37880206
+
+Beneficiário
+Nome Fantasia:
+
+Zero Perda
+
+Nome/Razão Social:
+
+Zero Perda
+
+CPF/CNPJ:
+
+34.765.411/0001-90
+
+Pagador
+Nome Fantasia:
+Nome/Razão Social:
+
+Associacao Dos Moradores Do Jardim
+Tarraf
+Associacao Dos Moradores Do Jardim
+Tarraf
+
+CPF/CNPJ:
+
+05.152.486/0001-05
+
+Beneficiário Final
+Nome/Razão Social:
+
+Zero Perda
+
+CPF/CNPJ:
+
+34.765.411/0001-90
+
+Data de Vencimento:
+
+15/02/2025
+
+Pagamento:
+Realizado:
+Documento:
+Juros/Multa:
+Desconto/Abatimento:
+
+17/02/2025
+17/02/2025 10:48
+900,00
+0,00
+0,00
+
+Pago:
+Situação:
+N. Agendamento:
+
+900,00
+Efetivado
+17792110
+Autenticação
+
+e2ce7cb6-f125-471d-aeea-36b60067b01d
+
+

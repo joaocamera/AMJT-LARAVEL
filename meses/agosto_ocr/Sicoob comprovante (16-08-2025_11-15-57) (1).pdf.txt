@@ -1,0 +1,42 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 50,00
+
+Transferido em 16/08/2025 as 11:15:46
+
+eletrica
+
+Comprovante para simples
+conferencia gerado em
+16/08/2025 as 11:15:50
+
+Recebedor
+
+Nome
+
+ANTONIO APARECIDO VELANI
+
+CPF/CNPSJ
+xk 995.498-**
+
+instituicao
+
+BCO BRADESCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

@@ -1,0 +1,36 @@
+BORA MERCADO DE ALIMENTOS
+Fone: (17)3226-3584
+CNPUJ: 02.624,938/0001 -08
+AVENIDA PRESIDENTE JUSCELINO
+KUBITS, 1500 - JARDIM TARRAF II
+SAO JOSE DO RIO PRETO, SP
+
+Documento Auxiliar da Nota Fiscal de Consumidor
+Eletrénica
+
+CODIGO  ~~—~dDESCRICAO
+
+QTD UN _VL.UNIT pe eG TAL
+2000101 PAO FRANCES BORA KG
+
+0,432 KG 21,50 9,29
+Qtde. Total de Itens 1
+Valor Total R$ 9,29
+Valor a Pagar R$ 9,29
+
+FORMA DE PAGAMENTO VALOR PAGO R$
+
+Boleto Bancario 9,29
+
+Consulte pela chave de acesso em ~
+https:/Avww.nfce. fazenda.sp.gev.br/consulta
+
+2525 1202 6249 3600 0108 6500 1000 0125 7410 0299 3580
+
+CONSUMIDOR NAO IDENTIFICADO
+NFC-e n° 12574 Série 004 18/12/2025 15:12:16
+Via Consumidor
+
+Protocolo de autorizacao: 135253861 169818
+Data de autorizagao: 18/12 2/2025 15:11:51
+

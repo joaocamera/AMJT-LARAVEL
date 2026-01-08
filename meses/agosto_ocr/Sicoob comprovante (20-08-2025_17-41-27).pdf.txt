@@ -1,0 +1,42 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 400,00
+
+Transferido em 20/08/2025 as 17:41:22
+
+gesseiro
+
+Comprovante para simples
+conferencia gerado em
+20/08/2025 as 17:41:25
+
+Recebedor
+
+Nome
+Vinicius Nascimento Delabona
+
+CPF/CNPSJ
+#** 329.588-**
+
+instituicao
+
+NU PAGAMENTOS S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:
+F017365162025082020408kaRIjqB7SF

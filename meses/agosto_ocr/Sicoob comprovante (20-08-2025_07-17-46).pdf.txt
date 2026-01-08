@@ -1,0 +1,43 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 160,00
+
+Transferido em 20/08/2025 as 07:17:43
+
+servente obra banheiro
+
+Comprovante para simples
+conferencia gerado em
+20/08/2025 as 07:17:44
+
+Recebedor
+
+Nome
+
+FRANCISCO ALVES MOREIRA
+
+CPF/CNPJ
+wxm_390.618-"*
+
+instituicao
+
+CAIXA ECONOMICA FEDERAL
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:
+E01736516202508201017U1kZPceVSbl

@@ -1,0 +1,42 @@
+YW SICOOB
+
+Comprovante de envio Pix
+
+RS 46,31
+
+Transferido em 02/12/2025 as 07:58:15
+
+Comprovante para simples
+conferéncia gerado em
+02/12/2025 as 07:58:25
+
+Recebedor
+
+Nome
+
+COMPANHIA PAULISTA DE FORCA E
+LUZ
+
+CPF/CNPJ
+** **Q.196/0001-**
+
+Instituicao
+
+BCO SANTANDER (BRASIL) S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2.486/0001-**
+
+Instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:
+E01736516202512021055Y97zTZKgSev

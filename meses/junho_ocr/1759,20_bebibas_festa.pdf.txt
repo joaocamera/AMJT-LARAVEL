@@ -1,0 +1,72 @@
+Y
+
+Pagamento realizado com sucesso
+
+RS 1.759,20
+
+Pagamento efetuado 28/07/2025
+
+(4) Comprovante para simples conferéncia
+gerado em 28/07/2025 as 10:15:15
+
+Comprovante de pagamento
+
+Beneficiario
+Nome/Razao social
+
+RIO PRETO DISTRIBUIDORA DE BEBIDAS LTDA
+
+CPF/CNPJ
+** 3951.121/0001-**
+
+Instituicao
+
+1-BANCO DO BRASIL S.A.
+
+Pagador
+
+Nome/Razao social
+
+ASSOCIACAO DOS MORADORES JARDIM
+TARRA
+
+CPF/CNPJ
+** 152.486/0001-**
+
+Cooperativa
+
+756 - BANCO SICOOB S.A.
+
+Conta debitada
+
+789496/ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF II
+
+Numero do agendamento
+
+19286809
+
+Data do agendamento
+
+28/07/2025
+
+Data do pagamento
+
+28/07/2025
+
+Outros encargos
+
+Valor do desconto
+
+Valor total
+
+RS 1.759,20
+
+situacao
+Efetivado
+
+Linha digitavel
+00190.00009 03586.659009 00198.023178 1
+11550000175920
+
+Autenticacao:

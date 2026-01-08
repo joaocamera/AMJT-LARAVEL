@@ -1,0 +1,47 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 260,00
+
+Transferido em 20/08/2025 as 16:10:09
+
+Comprovante para simples
+conferencia gerado em
+20/08/2025 as 16:10:13
+
+Recebedor
+
+Nome
+
+MANFRIN CASSEB E CIA LTDA
+
+CPF/CNPS
+e* **Q_543/0001-**
+
+instituicao
+
+ITAU UNIBANCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPSJ
+ex **2 486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+SEQOOSAOGE217PD051GIORSV6NAFI
+G/71RR
+
+ID da Transacao:

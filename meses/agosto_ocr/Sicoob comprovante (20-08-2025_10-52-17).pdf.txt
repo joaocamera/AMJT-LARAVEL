@@ -1,0 +1,46 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 93,30
+
+Transferido em 20/08/2025 as 10:52:13
+
+Comprovante para simples
+conferencia gerado em
+
+20/08/2025 as 10:52:15
+
+Recebedor
+
+Nome
+Claro
+
+CPF/CNPJ
+** **2_544/0001-**
+
+Instituicao
+
+CLARO PAY S.A. IP
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+00615800600000295651513
+
+ID da Transacao:

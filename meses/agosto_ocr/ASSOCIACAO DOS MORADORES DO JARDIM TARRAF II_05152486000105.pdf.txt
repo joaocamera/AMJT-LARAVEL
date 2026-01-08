@@ -1,0 +1,162 @@
+Instruções de Impressão
+- Imprima em impressora jato de tinta (ink jet) ou laser em qualidade normal ou alta (Não use modo econômico).
+- Utilize folha A4 (210 x 297 mm) ou Carta (216 x 279 mm) e margens mínimas à esquerda e à direita do formulário.
+- Corte na linha indicada. Não rasure, risque, fure ou dobre a região onde se encontra o código de barras.
+- Caso não apareça o código de barras no final, clique em F5 para atualizar esta tela.
+- Caso tenha problemas ao imprimir, copie a seqüencia numérica abaixo e pague no caixa eletrônico ou no internet banking:
+
+Linha Digitável:
+Número:
+Valor:
+
+00190.00009 03206.902003 00065.116170 6 11880000130014
+65116
+R$ 1.300,14
+
+Recibo do Pagador
+----------------------------------------------------------------------------------------------------------------------------------Valve Cred Empresa Simples de Crédito LTDA
+34.533.761/0001-20
+Rua Jair Martins Mil Homens, 500
+15090-080 - São José do Rio Preto - SP
+
+001-9
+
+00190.00009 03206.902003 00065.116170 6 11880000130014
+
+Beneficiário
+
+Agência/Código do beneficiário
+
+Espécie
+
+Valve Cred Empresa Simples de Crédito LTDA
+
+2502-X / 3206902
+
+R$
+
+Número do Documento
+
+28332-001
+(-) Descontos/Abatimentos
+
+CPF/CNPJ
+
+Vencimento
+
+34.533.761/0001-20
+
+29/08/2025
+
+(+) Mora Multa
+
+(+) Acréscimos
+
+(-) Outras Deduções
+
+Quantidade
+
+Nosso Número
+
+32069020000065116
+Valor do Documento
+
+R$ 1.300,14
+(=) Valor Cobrado
+
+Pagador
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II / CNPJ: 05.152.486/0001-05
+Demonstrativo
+
+Autenticação mecânica
+
+Juros.....: R$ 4.33 ao dia após vencimento
+Multa.....: 2% após 1 dia corrido do vencimento
+
+Corte na linha pontilhada
+-----------------------------------------------------------------------------------------------------------------------------------
+
+001-9
+
+00190.00009 03206.902003 00065.116170 6 11880000130014
+
+Local de pagamento
+
+Vencimento
+
+Pagável em qualquer agência bancária até o vencimento.
+
+29/08/2025
+
+Beneficiário
+
+Agência/Código beneficiário
+
+Valve Cred Empresa Simples de Crédito LTDA / CNPJ: 34.533.761/0001-20
+Data do documento
+
+Número do documento
+
+07/08/2025
+
+28332-001
+
+Uso do Banco
+
+Carteira
+
+Espécie
+
+17
+
+R$
+
+Espécie Doc.
+
+Aceite
+
+Data processamento
+
+DM
+
+N
+
+07/08/2025
+
+Quantidade
+
+Valor Documento
+
+Instruções de responsabilidade do beneficiário. Qualquer dúvida sobre este boleto, contate o beneficiário
+
+Juros.....: R$ 4.33 ao dia após vencimento
+Multa.....: 2% após 1 dia corrido do vencimento
+Boleto com ordem de protesto automático após 7 dias corridos do vencimento
+
+2502-X / 3206902
+Nosso número
+
+32069020000065116
+Valor Documento
+
+R$ 1.300,14
+(-) Desconto / Abatimentos)
+(-) Outras deduções
+/ Juros
+(+) Outros acréscimos
+(=) Valor cobrado
+
+Pagador
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II / CNPJ: 05.152.486/0001-05
+RUA JOSE ELIAS ABUD - JARDIM TARRAF II
+15092-490 - SAO JOSE DO RIO PRETO - SP
+Cód. Baixa
+Sacador/Avalista
+
+A. C. LOPES ELETRICA / CNPJ: 07.895.449/0001-04
+
+Autenticação mecânica - Ficha de Compensação
+
+

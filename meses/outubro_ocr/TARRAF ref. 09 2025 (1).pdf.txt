@@ -1,0 +1,267 @@
+NFS-e COMPOSTA POR 1 PÁGINA(S)
+
+Página 1 de 1
+
+Número da NFS-e
+427
+
+PM DE POLONI - SP
+PREF. MUNIC. DE POLONI - SP
+
+Código de Verificação de Autenticidade
+
+L9ITY24GL
+
+NOTA FISCAL DE SERVIÇOS ELETRÔNICA - NFS-e
+
+Data e Hora de Emissão da NFS-e
+
+30/09/2025 às 08:14:20
+
+Informações Fiscais
+Exigibilidade do ISS
+
+Número do Processo
+
+Município de Incidência do ISS
+
+Exigível
+
+Chave de Acesso
+538239EZ3T4KNG4WOYDAOV9K5Z3DRJWT
+
+Local da Prestação
+
+SAO JOSE DO RIO PRETO- SAO JOSE DO RIO PRETO
+SP
+- SP
+
+Número do RPS
+
+Série do RPS
+
+Tipo do RPS
+
+Data do RPS
+
+Competência
+
+Optante Simples Nacional
+
+Incentivo Fiscal
+
+Regime Especial Tributação
+
+1 - Sim
+
+2 - Não
+
+Microempresário e Empresa de Pequeno Porte (ME EPP) 03 - Sobre Faturamento
+
+30/09/2025
+
+Para certificação da autenticidade acesse
+http://45.171.140.220:8080/issweb, menu
+consultas e informe os dados desta NFS-e.
+
+Tipo ISS
+
+PRESTADOR DE SERVIÇOS
+CPF/CNPJ
+
+RG/Inscrição Estadual
+
+08.601.514/0001-04
+
+Inscrição Municipal Cadastro
+
+Nome/Razão Social
+
+2343
+
+M A BRITO & CIA LTDA - ME
+
+000001978
+
+Logradouro
+
+Complemento
+
+Bairro
+
+RUA JOSE FIGUEIRA, 172
+
+COMERCIO
+
+CENTRO
+
+CEP
+
+Cidade
+
+Telefone
+
+E-mail
+
+15160-001
+
+POLONI-SP
+
+BRITOPOLONI@GMAIL.COM
+
+TOMADOR DE SERVIÇOS
+CPF/CNPJ/Documento
+
+RG/Inscrição Estadual
+
+05.152.486/0001-05
+
+ISENTO
+
+Inscrição Municipal
+
+Nome/Razão Social
+
+ASSOCIAÇÃO DOS MORADORES DO JARDIM TARRAF II
+
+Logradouro
+
+Complemento
+
+Bairro
+
+RUA JOSE ELIAS ABUD, 225
+
+JARDIM TARRAF II
+
+CEP/Cod.Postal
+
+Cidade/País
+
+Cod. IBGE
+
+15092-490
+
+SAO JOSE DO RIO PRETO - SP
+
+3549805
+
+Telefone
+
+E-mail
+
+Discriminação dos Serviços
+Qtde.
+
+Un. Medida
+
+1,00
+
+UN
+
+Descrição
+
+Vlr. Unitário
+
+Total
+
+322,50
+
+R$ 322,50
+
+SERVIÇOS DE ELABORAÇÃO DE DOCUMENTOS - 09/2025.
+
+Imposto Sobre Serviços de Qualquer Natureza - ISS
+
+Construção Civil
+
+LC 116/2003: 99.99
+
+Alíquota
+
+Atividade Município
+
+Código CNAE
+
+Outros Serviços
+
+2,00%
+
+9999990000001
+
+8219999
+
+Código da Obra
+
+Código ART
+
+Valor Total dos Serviços
+
+Desconto Incondicionado
+
+Deduções Base Cálculo
+
+Base de Cálculo
+
+Total do ISS
+
+ISS Retido
+
+Desconto Condicionado
+
+R$ 322,50
+
+R$ 0,00
+
+R$ 0,00
+
+R$ 322,50
+
+R$ 0,00
+
+2 - Não
+
+R$ 0,00
+
+Retenções de Impostos
+PIS
+
+COFINS
+
+INSS
+
+IRRF
+
+CSLL
+
+Outras Retenções
+
+R$ 0,00
+
+R$ 0,00
+
+R$ 0,00
+
+R$ 0,00
+
+R$ 0,00
+
+R$ 0,00
+
+Valor Líquido da NFS-e: R$ 322,50
+
+Val. Aprox. Tributos:
+
+Informações Complementares
+
+FATURAS: PAGAMENTO À VISTA Venc: 30/09/2025 R$ 322,50 Doc: 427 Obs: null
+
+RECEBI(EMOS) DE M A BRITO & CIA LTDA - ME O SERVIÇO CONSTANTE DA NFS-e DE NÚMERO 427 E CÓDIGO DE VERIFICAÇÃO L9ITY24GL.
+Data
+______/______/____________
+
+CPF/RG
+
+Assinatura
+
+

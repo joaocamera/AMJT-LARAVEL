@@ -1,0 +1,98 @@
+EE
+
+Pagamento agendado com sucesso
+
+RS 1.300,14
+
+Agendado para 29/08/2025
+
+(4) Comprovante para simples conferéncia
+gerado em 28/08/2025 as 08:19:57
+
+Comprovante de agendamento
+
+Beneficiario
+
+Nome/Razao social
+
+VALVE CRED EMPRESA SIMPLES DE CREDITO
+LTDA
+
+CPF/CNPJ
+** 533./761/0001-**
+
+Instituicao
+
+1-BANCO DO BRASIL S.A.
+
+Pagador
+
+Nome/Razao social
+
+ASSOCIACAO DOS MORADORES DO JARDIM
+TA
+
+CPF/CNPJ
+** 152.486/0001-**
+
+Cooperativa
+
+756 - BANCO SICOOB S.A.
+
+Conta debitada
+
+789496/ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+Beneficiario final
+
+Nome/Razao social
+
+A. C. LOPES
+
+CPF/CNPJ
+** 895.449/0001-**
+
+Numero do agendamento
+
+19587941
+
+Data do agendamento
+
+28/08/2025
+
+Data do pagamento
+
+29/08/2025
+
+Outros encargos
+
+RS 0,00
+
+Valor do desconto
+
+RS 0,00
+
+Valor total
+
+RS 1.300,14
+
+situacao
+
+Agendado
+
+Autoriza atualizacao titulo
+Nao
+
+Linha digitavel
+00190.00009 03206.902003 00065.116170 6
+11880000130014
+
+(4) Certifique-se que a conta debitada tenha
+saldo disponivel até as 22:00 horas do dia
+do pagamento. Caso o saldo seja
+insuficiente, o pagamento nao sera
+efetuado. Lembramos que créeditos
+oriundos de liberacao de cheques
+depositados e DOCs sao processados apos
+as 20:00 horas (Horario de Brasilia)

@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS creditos (
   descricao TEXT DEFAULT NULL,
   hash CHAR(64) NOT NULL,
   match_status VARCHAR(20) NOT NULL DEFAULT 'pendente',
+  match_origin VARCHAR(16) NOT NULL DEFAULT 'auto',
   idinscrito INT UNSIGNED DEFAULT NULL,
   idmensalidade INT UNSIGNED DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

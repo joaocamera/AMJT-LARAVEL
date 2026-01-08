@@ -1,0 +1,43 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 89,10
+
+Transferido em 02/09/2025 as 08:56:41
+
+produto limpeza
+
+Comprovante para simples
+conferencia gerado em
+
+02/09/2025 as 08:56:43
+
+Recebedor
+
+Nome
+
+FERNANDA DA SILVA CALDEIRA LTDA
+
+CPF/CNPJ
+we wef 2a0/0001-""
+
+instituicao
+
+BCO BRADESCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

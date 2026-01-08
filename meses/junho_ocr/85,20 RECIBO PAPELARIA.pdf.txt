@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 85,20
+
+Transferido em 01/07/2025 as 08:17:07
+
+G) Comprovante para simples
+confereéncia gerado em
+01/07/2025 as 08:1 7:09
+
+Recebedor
+
+Nome
+
+SA RIO PRETO COMERCIO DE
+ARTIGOS DE PAPELARIA LTDA
+
+CPF/CNPJ
+we ee] .3o0/0001-"*
+
+Instituicao
+
+PAGSEGURO INTERNET IP S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+20250/7010816195010862499282095
+72
+
+ID da Transacao:

@@ -1,0 +1,343 @@
+Nota Fiscal / RE - Ato Declaratório nº 2017/064
+Conta de Energia Elétrica
+Nº 436459567 Série C
+Data de Emissão: 18/07/2025
+
+ASSOCIACAO DOS MORADORES DO JD TARRAF II
+R JOSE ELIAS ABUD 225
+JD TARRAF II
+15092-490 SAO JOSE DO RIO PRETO SP
+
+Data de Apresentação: 21/07/2025
+Pág: 01 de 02
+Conta Contrato N° 310002166905
+
+Leitura Próximo Mês: 19/08/2025
+
+Reservado ao Fisco
+
+Lote
+
+Roteiro de leitura
+
+N°. Medidor
+
+PN
+
+11
+
+SJPBU180-00000291
+
+206227833
+
+701895158
+
+9293.4C7E.EFF2.5B28.28DB.A98D.7FF5.EACD
+
+Mantenha seus dados sempre atualizados, alguns itens determinam a tarifa e tributação de sua fatura de energia elétrica. Solicite os serviços disponíveis em nosso site com rapidez
+e segurança e reserve mais tempo para você em seu dia-a-dia. Mais informações acesse o endereço que consta no verso de sua conta.
+
+ASSOCIACAO DOS MORADORES DO JD TARRAF II
+R JOSE ELIAS ABUD, 225
+JD TARRAF II
+15092-490 SAO JOSE DO RIO PRETO - SP
+
+0800 010 1010
+www.cpfl.com.br
+Cod.
+115
+
+CNPJ: 05.152.486/0001-05
+CLASSIFICAÇÃO: Convencional B3 Comercial Outros Serviços Atividades - Bifásico 220 /
+127 V
+
+INSTALAÇÃO
+
+701895158
+
+Descrição da Operação
+N° 900006989536
+
+Mês
+Ref.
+
+JUL/2025
+
+37541650
+Quant.
+Faturada
+
+Unid.
+Med.
+
+Tarifa com
+Tributos R$
+
+Valor Total
+da Operação
+R$
+
+28/07/2025
+
+Base Cálculo
+ICMS R$
+
+Aliq.
+ICMS
+
+ICMS
+
+180,37
+
+Base Cálculo
+PIS/COFINS
+
+PIS
+0,94%
+
+Bandeiras
+Tarifárias
+(Dias)
+
+COFINS
+4,32%
+
+0605 Consumo Uso Sistema [KWh]-TUSD
+
+JUL/25
+
+169,000
+
+kWh
+
+0,49964498
+
+84,44
+
+84,44
+
+18,00
+
+15,20
+
+69,24
+
+0,65
+
+2,99
+
+0601 Consumo - TE
+
+JUL/25
+
+169,000
+
+kWh
+
+0,36988166
+
+62,51
+
+62,51
+
+18,00
+
+11,25
+
+51,26
+
+0,48
+
+2,21
+
+0601 Adicional de Bandeira Vermelha
+
+JUL/25
+
+9,70
+
+9,70
+
+18,00
+
+1,75
+
+7,95
+
+0,07
+
+0,34
+
+28,20
+
+128,45
+
+1,20
+
+5,54
+
+Total Distribuidora
+
+156,65
+
+Vermelha P1
+13 Dias
+Vermelha P1
+18 Dias
+
+DÉBITOS DE OUTROS SERVIÇOS
+0807 Contrib. Custeio IP-CIP Municipal
+
+JUL/25
+
+23,72
+
+Total Consolidado
+
+2025 JUL
+JUN
+MAI
+ABR
+MAR
+FEV
+JAN
+2024 DEZ
+NOV
+OUT
+SET
+AGO
+JUL
+
+180,37
+
+lllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+
+llllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
+
+llllllllllllllllllllllllllllllllllllllllllllllllllllll
+
+lllllllllllllllllllllllllll
+
+lllllllllllllllllllllllllllllll
+
+lllllllllllllllllllllllll
+
+llllllllllllllllllllll
+
+lllllllllllllllllllllllllll
+
+lllllllllllllllllllllllll
+
+lllllllllllll
+
+llll
+
+lllllllllll
+
+lllll
+
+169
+136
+121
+60
+69
+57
+50
+60
+57
+29
+8
+24
+11
+
+31
+29
+32
+29
+30
+28
+32
+30
+29
+33
+29
+33
+30
+
+Consumo
+
+TUSD
+
+TE
+
+Consumo kWh
+
+0,38815000
+
+0,28738000
+
+156,65
+
+Nº
+
+Energia
+
+206227833
+
+Ativa
+
+Leitura
+Leitura
+18/07/2025 17/06/2025
+21984
+21815
+
+Fator
+Multipl.
+1,00
+
+ConsumoTaxa de Perda
+Leitura
+[kWh]
+[%]
+Próximo Mês
+169
+19/08/2025
+
+Para consulta dos indicadores acesse nosso site www.cpfl.com.br
+
+CDE Escassez Hídrica TUSD R$ 0,90 TE R$ -3,95
+
+Nota Fiscal
+Conta de Energia Elétrica
+N° 436459567 Série C
+
+CódDébAut-Banco
+
+Total a Pagar (R$)
+
+Data de Vencimento
+
+310002166905
+
+180,37
+
+28/07/2025
+
+Essa conta poderá ser paga no credenciado mais perto de você. Confira a lista completa no site
+
+Pague aqui - PIX
+
+CARREFOUR-S.J.RIO PRETO SHOP-CSS
+MAGDA DA SILVA ZANATA ME
+BRASILIA MATERIAL PARA CONSTRUCAO
+
+AV. BRIG. FARIA LIMA 6363 - JD. FERNANDES
+AV BRIGADEIRO FARIA LIMA 6363 - VILA SAO JOSEJD FERNANDES
+R AUGUSTO SIGNORINI 1085 - SAO FRANCISCO
+
+836600000019 803700403295 934960218030 100021669054
+
+Autenticação Mecânica
+
+

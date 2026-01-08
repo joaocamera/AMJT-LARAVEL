@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+R$ 52,00
+
+Transferido em 07/07/2025 as 13:53:09
+
+G) Comprovante para simples
+conferencia gerado em
+07/07/2025 as 13:53:10
+
+Recebedor
+
+Nome
+
+ROTISSERIA COSTA RIO PRETO LTDA
+
+CPF/CNPJ
+** **0).785/0001-**
+
+instituicao
+
+STONE IP S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+STONEPOSA2885vatytrLhfab6YiXS1L
+qbFJ
+
+ID da Transacao:
+E01 7365162025070/1652ym6nLM 1 aall

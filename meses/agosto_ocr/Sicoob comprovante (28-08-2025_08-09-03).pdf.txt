@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+R$ 200,20
+
+Transferido em 28/08/2025 as 08:08:59
+
+Comprovante para simples
+conferencia gerado em
+28/08/2025 as 08:09:01
+
+Recebedor
+
+Nome
+
+COMPANHIA PAULISTA DE FORCAE
+LUZ
+
+CPF/CNPJ
+** **0).196/0001-**
+
+instituicao
+
+BCO SANTANDER (BRASIL) S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+3196359731780310002166905
+
+ID da Transacao:
+E01 /36516202508281 10e8dkx4Ft6bdm|

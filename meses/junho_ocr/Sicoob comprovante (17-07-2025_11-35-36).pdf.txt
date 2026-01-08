@@ -1,0 +1,43 @@
+WsSICOOB
+
+Comprovante de envio Pix
+
+RS 32,00
+
+Transferido em 17/07/2025 as 11:35:33
+
+papel para fichas evento
+
+G) Comprovante para simples
+conferencia gerado em
+17/07/2025 as 11:35:34
+
+Recebedor
+
+Nome
+
+49.848.136 BARBARA MAFRA
+ROMERO ONOFRE
+
+CPF/CNPJ
+** **8.136/0001-**
+
+instituicao
+
+NU PAGAMENTOS S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF II
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+ID da Transacao:

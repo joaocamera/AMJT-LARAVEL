@@ -1,0 +1,48 @@
+WsICOOB
+
+Comprovante de envio Pix
+
+RS 68,00
+
+Transferido em 16/07/2025 as 07:56:36
+
+G) Comprovante para simples
+confereéncia gerado em
+16/07/2025 as 07:56:42
+
+Recebedor
+
+Nome
+
+J GRAIA COMERCIO DE MAT PARA
+CONSTRUCAO LTDA
+
+CPF/CNPJ
+** **7_896/0001-**
+
+Instituicao
+
+ITAU UNIBANCO S.A.
+
+Pagador
+
+Nome
+
+ASSOCIACAO DOS MORADORES DO
+JARDIM TARRAF Il
+
+CPF/CNPJ
+** **2_486/0001-**
+
+instituicao
+
+CCLA REG. CTR. E OESTE MINEIRO
+
+Detalhes do pagamento
+
+identificador
+
+RESV25/779600251065540HXS4F 408
+B40B4B
+
+ID da Transacao:

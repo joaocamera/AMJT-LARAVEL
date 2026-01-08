@@ -1,0 +1,47 @@
+-D
+Comprovante de envio de Pix
+25/08/2025 as 12:00:02
+
+Valor da transferéncia
+
+R$ 845,00
+
+Tipo de transferéncia
+Pix
+
+Cédigo da transagaéo Pagbank
+352fcbef-d92a-448e-ae2d-de6187e41da9
+
+Cédigo da transagao Pix
+E08561701202508251459RZVO3Q5IAE4
+
+De
+
+Associagao dos Moradores do Jardim Tarraf II
+
+CNPJ
+
+05.152.486/0001-05
+
+Instituigao
+
+PagBank (PagSeguro Internet Instituigéo de
+Pagamento S.A.)
+
+Para
+
+JOAO CARLOS CAMERA
+
+CPF
+***720.378-*
+
+Instituigao
+BANCO DO BRASIL S.A.
+
+Chave
+(17) 98110-4050
+
+Para diividas, ligue 4003-1775 (capitais e regides
+metropolitanas) ou 0800-728-2174 (demais localidades,
+exceto celular). Para falar com a Ouvidoria ligue
+800-728-2167.

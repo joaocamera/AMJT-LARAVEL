@@ -1,0 +1,272 @@
+DANFSe v1.0
+Documento Auxiliar da NFS-e
+Chave de Acesso da NFS-e
+
+35046022234479574000106000000000000225088854126380
+
+Número da NFS-e
+
+Competência da NFS-e
+
+Número da DPS
+
+Série da DPS
+
+2
+
+Data e Hora da emissão da NFS-e
+
+20/08/2025
+
+2
+
+EMITENTE DA NFS-e
+Prestador do Serviço
+
+20/08/2025 15:30:29
+
+Data e Hora da emissão da DPS
+
+900
+
+20/08/2025 15:30:29
+
+A autenticidade desta NFS-e pode ser verificada
+pela leitura deste código QR ou pela consulta da
+chave de acesso no portal nacional da NFS-e
+
+CNPJ / CPF / NIF
+
+Inscrição Municipal
+
+Telefone
+
+34.479.574/0001-06
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+34.479.574 VINICIUS NASCIMENTO DELABONA
+
+(17) 9686-4745
+
+VINICIUSDELABONA@GMAIL.COM
+
+ALEXANDRE HENRIQUE SOARES DE CARVALHO COSTA, 2175,
+BOSQUE DAS LARANJEIRAS
+
+Bady Bassitt - SP
+
+Simples Nacional na Data de Competência
+
+CEP
+
+15115-000
+
+Regime de Apuração Tributária pelo SN
+
+Optante - Microempreendedor Individual (MEI)
+
+-
+
+TOMADOR DO SERVIÇO
+
+Inscrição Municipal
+
+CNPJ / CPF / NIF
+
+05.152.486/0001-05
+
+-
+
+Nome / Nome Empresarial
+
+E-mail
+
+Endereço
+
+Município
+
+ASSOCIACAO DOS MORADORES DO JARDIM TARRAF II
+
+Telefone
+
+(17) 3226-4125
+
+-
+
+JOSE ELIAS ABUD, 225, JARDIM TARRAF II
+
+São José do Rio Preto - SP
+
+CEP
+
+15092-490
+
+INTERMEDIÁRIO DO SERVIÇO NÃO IDENTIFICADO NA NFS-e
+SERVIÇO PRESTADO
+Código de Tributação Nacional
+
+07.06.02 - Colocação e instalação de
+assoalhos, revestimentos de par...
+
+Código de Tributação Municipal
+
+Local da Prestação
+
+-
+
+São José do Rio Preto - SP
+
+País da Prestação
+
+-
+
+Descrição do Serviço
+
+Confecção em forrro de Drywall no banheiro
+TRIBUTAÇÃO MUNICIPAL
+Tributação do ISSQN
+
+País Resultado da Prestação do Serviço
+
+-
+
+Bady Bassitt - SP
+
+Nenhum
+
+Tipo de Imunidade
+
+Suspensão da Exigibilidade do ISSQN
+
+Número Processo Suspensão
+
+Benefício Municipal
+
+Valor do Serviço
+
+Desconto Incondicionado
+
+Total Deduções/Reduções
+
+-
+
+-
+
+BC ISSQN
+
+Alíquota Aplicada
+
+Retenção do ISSQN
+
+ISSQN Apurado
+
+IRRF
+
+CP
+
+CSLL
+
+PIS
+
+COFINS
+
+Retenção do PIS/COFINS
+
+TOTAL TRIBUTAÇÃO FEDERAL
+
+Valor do Serviço
+
+Desconto Condicionado
+
+Desconto Incondicionado
+
+ISSQN Retido
+
+IRRF, CP,CSLL - Retidos
+
+PIS/COFINS Retidos
+
+Operação Tributável
+-
+
+Município de Incidência do ISSQN
+
+Não
+
+R$ 400,00
+
+-
+
+-
+
+-
+
+-
+
+Não Retido
+
+Regime Especial de Tributação
+
+-
+
+Cálculo do BM
+
+-
+
+TRIBUTAÇÃO FEDERAL
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+VALOR TOTAL DA NFS-E
+R$ 400,00
+
+R$
+
+R$ 0,00
+
+R$
+
+-
+
+Valor Líquido da NFS-e
+
+-
+
+R$ 400,00
+
+TOTAIS APROXIMADOS DOS TRIBUTOS
+Federais
+
+-
+
+INFORMAÇÕES COMPLEMENTARES
+
+Estaduais
+
+-
+
+Municipais
+
+-
+
+

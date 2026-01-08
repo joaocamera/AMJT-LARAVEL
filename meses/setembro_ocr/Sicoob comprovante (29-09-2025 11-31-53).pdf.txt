@@ -1,0 +1,63 @@
+SICOOB
+SISTEMA DE COOPERATIVAS DE CRÉDITO DO BRASIL
+PLATAFORMA DE SERVIÇOS FINANCEIROS DO SICOOB – SISBR
+29/09/2025
+
+COMPROVANTE
+DE PAGAMENTO DE CONVÊNIO
+
+11:31:42
+
+Cooperativa:
+
+4030/SICOOB DIVICRED
+
+Conta:
+
+789496/ASSOCIACAO DOS MORADORES
+DO JARDIM TARRAF II
+
+Convênio:
+
+Núm. do agendamento:
+NSU:
+Data do agendamento:
+
+CPFL PAULISTA - SP
+83690000001 57690040329
+53503880903 10002166905
+19885659
+252720137282
+29/09/2025 11:31
+
+Data do pagamento:
+Valor do documento:
+Valor dos juros:
+Valor da multa:
+Outros encargos:
+
+29/09/2025
+157,69
+0,00
+0,00
+0,00
+
+Valor do desconto:
+Outras deduções:
+Valor total:
+Situação:
+
+0,00
+0,00
+157,69
+EFETIVADO
+
+Autenticação:
+
+405EF53E-341D-4197-88668625D9FCB1FA
+
+Cód. de barras:
+
+OUVIDORIA SICOOB: 08007250996
+
+
