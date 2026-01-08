@@ -48,6 +48,46 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(uploadsRoot));
 
+const accessLogDir = path.join(process.cwd(), "logs");
+const accessLogFile = path.join(accessLogDir, "access.log");
+fs.mkdir(accessLogDir, { recursive: true }).catch((err) => {
+  console.error("Falha ao criar diretorio de logs:", err);
+});
+
+function getClientIp(req) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.trim()) {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.socket?.remoteAddress || "";
+}
+
+function getArea(req) {
+  if (req.path.startsWith("/api/associado")) return "associado";
+  if (req.path.startsWith("/api")) return "admin";
+  return "publico";
+}
+
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on("finish", () => {
+    const durationMs = Date.now() - startedAt;
+    const entry = {
+      ts: new Date().toISOString(),
+      ip: getClientIp(req),
+      method: req.method,
+      path: req.originalUrl || req.url,
+      status: res.statusCode,
+      duration_ms: durationMs,
+      area: getArea(req),
+      user_id: req.user?.idinscrito || null,
+      user_agent: req.headers["user-agent"] || ""
+    };
+    fs.appendFile(accessLogFile, `${JSON.stringify(entry)}\n`).catch(() => null);
+  });
+  next();
+});
+
 fs.mkdir(despesasUploadDir, { recursive: true }).catch((err) => {
   console.error("Falha ao criar diretorio de anexos:", err);
 });
