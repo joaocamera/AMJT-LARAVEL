@@ -4517,14 +4517,26 @@ function Dashboard({ token, onLogout }) {
                   ) : (
                     rows.map((row) => (
                       <tr key={row.idinscritos} className="text-slate-700">
-                        <td className="py-3 pr-4 font-medium text-slate-900">
+                        <td
+                          className={`py-3 pr-4 font-medium ${
+                            statusFilter === "inadimplente"
+                              ? "text-rose-600"
+                              : "text-slate-900"
+                          }`}
+                        >
                           {row.nome}
                         </td>
                         <td className="py-3 pr-4">{row.cpf}</td>
                         <td className="py-3 pr-4">{row.rua}</td>
                         <td className="py-3 pr-4">{row.numero}</td>
                         <td className="py-3 pr-4">{row.telefone}</td>
-                        <td className="py-3 pr-4">
+                        <td
+                          className={`py-3 pr-4 ${
+                            statusFilter === "inadimplente"
+                              ? "text-rose-600"
+                              : "text-slate-700"
+                          }`}
+                        >
                           {formatCurrency(row.total_pago)}
                         </td>
                         <td className="py-3 pr-4 text-right">
