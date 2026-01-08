@@ -2616,7 +2616,7 @@ function UserDashboard({ token, onLogout }) {
       try {
         const [profileRes, paymentsRes] = await Promise.all([
           apiFetch("/api/associado/me", {}, token),
-          apiFetch("/api/associado/pagamentos", {}, token)
+          apiFetch("/api/associado/pagamentos?all=1", {}, token)
         ]);
         if (!profileRes.ok) {
           throw new Error("Falha ao carregar perfil");
@@ -2768,6 +2768,25 @@ function UserDashboard({ token, onLogout }) {
   }
 
   const totalPago = payments.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
+  const { totalPago12m, totalDoacao12m } = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setMonth(cutoff.getMonth() - 12);
+    return payments.reduce(
+      (acc, item) => {
+        const competenciaDate = item.competencia ? new Date(item.competencia) : null;
+        if (!competenciaDate || Number.isNaN(competenciaDate.getTime())) {
+          return acc;
+        }
+        if (competenciaDate >= cutoff) {
+          acc.totalPago12m += Number(item.valor_total || 0);
+          acc.totalDoacao12m += Number(item.doacao || 0);
+        }
+        return acc;
+      },
+      { totalPago12m: 0, totalDoacao12m: 0 }
+    );
+  }, [payments]);
 
   return (
     <div className="min-h-screen">
@@ -3058,6 +3077,11 @@ function UserDashboard({ token, onLogout }) {
                   {payments.length} registros
                 </div>
               </div>
+              {totalPago12m >= 360 && totalDoacao12m > 0 ? (
+                <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                  Prezado Associado, obrigado por suas doações, você não tem débitos com a associação.
+                </div>
+              ) : null}
 
               <div className="mt-4 grid gap-3 sm:hidden">
                 {loading ? (
@@ -3220,6 +3244,7 @@ function Dashboard({ token, onLogout }) {
   const [resumoLoading, setResumoLoading] = useState(false);
   const [balanceteBusyMonth, setBalanceteBusyMonth] = useState("");
   const [balanceteError, setBalanceteError] = useState("");
+  const [associadosSort, setAssociadosSort] = useState("total_desc");
   const associadosMap = useMemo(() => {
     const map = {};
     rows.forEach((item) => {
@@ -3277,6 +3302,17 @@ function Dashboard({ token, onLogout }) {
       }))
       .sort((a, b) => a.mes.localeCompare(b.mes));
   }, [resumoMensal]);
+  const associadosOrdenados = useMemo(() => {
+    const list = [...rows];
+    list.sort((a, b) => {
+      const totalDiff = Number(b.total_pago || 0) - Number(a.total_pago || 0);
+      if (totalDiff !== 0) {
+        return associadosSort === "total_desc" ? totalDiff : -totalDiff;
+      }
+      return String(a.nome || "").localeCompare(String(b.nome || ""));
+    });
+    return list;
+  }, [rows, associadosSort]);
 
   useEffect(() => {
     if (adminTab !== "despesas") return;
@@ -4497,7 +4533,24 @@ function Dashboard({ token, onLogout }) {
                     <th className="py-3 pr-4">Rua</th>
                     <th className="py-3 pr-4">Numero</th>
                     <th className="py-3 pr-4">Telefone</th>
-                    <th className="py-3 pr-4">Total pago</th>
+                    <th className="py-3 pr-4">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600"
+                        onClick={() =>
+                          setAssociadosSort((prev) =>
+                            prev === "total_desc" ? "total_asc" : "total_desc"
+                          )
+                        }
+                      >
+                        Total pago
+                        {associadosSort === "total_desc" ? (
+                          <ChevronDown className="h-3 w-3" />
+                        ) : (
+                          <ChevronUp className="h-3 w-3" />
+                        )}
+                      </button>
+                    </th>
                     <th className="py-3 pr-4"></th>
                   </tr>
                 </thead>
@@ -4508,19 +4561,21 @@ function Dashboard({ token, onLogout }) {
                         Carregando...
                       </td>
                     </tr>
-                  ) : rows.length === 0 ? (
+                  ) : associadosOrdenados.length === 0 ? (
                     <tr>
                       <td className="py-4 text-slate-500" colSpan={7}>
                         Nenhum inscrito encontrado.
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row) => (
+                    associadosOrdenados.map((row) => (
                       <tr key={row.idinscritos} className="text-slate-700">
                         <td
                           className={`py-3 pr-4 font-medium ${
                             statusFilter === "inadimplente"
-                              ? "text-rose-600"
+                              ? Number(row.total_pago_12m || 0) >= 360
+                                ? "text-blue-600"
+                                : "text-rose-600"
                               : "text-slate-900"
                           }`}
                         >
@@ -4533,7 +4588,9 @@ function Dashboard({ token, onLogout }) {
                         <td
                           className={`py-3 pr-4 ${
                             statusFilter === "inadimplente"
-                              ? "text-rose-600"
+                              ? Number(row.total_pago_12m || 0) >= 360
+                                ? "text-blue-600"
+                                : "text-rose-600"
                               : "text-slate-700"
                           }`}
                         >

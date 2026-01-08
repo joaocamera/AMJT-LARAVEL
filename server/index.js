@@ -572,10 +572,14 @@ app.get("/api/inscritos", requireAuth, async (req, res) => {
     const applyCompliance = competencia >= START_COMPETENCIA;
     const baseSelect =
       "SELECT i.idinscritos, i.nome, i.cpf, i.rua, i.numero, i.telefone, i.email, i.profissao, " +
-      "COALESCE(m.total_pago, 0) AS total_pago, COALESCE(m.total_doacao, 0) AS total_doacao " +
+      "COALESCE(m.total_pago, 0) AS total_pago, COALESCE(m.total_doacao, 0) AS total_doacao, " +
+      "COALESCE(m12.total_pago_12m, 0) AS total_pago_12m " +
       "FROM inscritos i " +
       "LEFT JOIN (SELECT idinscrito, SUM(valor_total) AS total_pago, SUM(doacao) AS total_doacao FROM mensalidades GROUP BY idinscrito) m " +
-      "ON m.idinscrito = i.idinscritos ";
+      "ON m.idinscrito = i.idinscritos " +
+      "LEFT JOIN (SELECT idinscrito, SUM(valor_total) AS total_pago_12m FROM mensalidades " +
+      "WHERE competencia >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) GROUP BY idinscrito) m12 " +
+      "ON m12.idinscrito = i.idinscritos ";
     const whereParts = [];
     const params = [];
 
@@ -853,13 +857,21 @@ app.put("/api/associado/me", requireUserAuth, async (req, res) => {
 });
 
 app.get("/api/associado/pagamentos", requireUserAuth, async (req, res) => {
+  const includeAll = String(req.query.all || "").toLowerCase() === "1";
   try {
-    const [rows] = await pool.query(
-      "SELECT idmensalidade, competencia, meses, valor_mensal, doacao, valor_total, data_pagamento, created_at, updated_at " +
-        "FROM mensalidades WHERE idinscrito = ? AND competencia >= ? " +
-        "ORDER BY data_pagamento DESC, idmensalidade DESC",
-      [req.user.idinscrito, START_COMPETENCIA]
-    );
+    const [rows] = includeAll
+      ? await pool.query(
+          "SELECT idmensalidade, competencia, meses, valor_mensal, doacao, valor_total, data_pagamento, created_at, updated_at " +
+            "FROM mensalidades WHERE idinscrito = ? " +
+            "ORDER BY data_pagamento DESC, idmensalidade DESC",
+          [req.user.idinscrito]
+        )
+      : await pool.query(
+          "SELECT idmensalidade, competencia, meses, valor_mensal, doacao, valor_total, data_pagamento, created_at, updated_at " +
+            "FROM mensalidades WHERE idinscrito = ? AND competencia >= ? " +
+            "ORDER BY data_pagamento DESC, idmensalidade DESC",
+          [req.user.idinscrito, START_COMPETENCIA]
+        );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Erro ao buscar pagamentos" });
