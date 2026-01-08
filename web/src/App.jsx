@@ -61,7 +61,41 @@ function formatDateDisplay(value) {
   return `${day}/${month}/${year}`;
 }
 
+function formatDateDisplayDash(value) {
+  if (!value) return "";
+  const datePart = String(value).split("T")[0];
+  const parts = datePart.split("-");
+  if (parts.length !== 3) return String(value);
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return String(value);
+  return `${day}-${month}-${year}`;
+}
+
+function formatDateDisplayDashShort(value) {
+  if (!value) return "";
+  const datePart = String(value).split("T")[0];
+  const parts = datePart.split("-");
+  if (parts.length !== 3) return String(value);
+  const [year, month, day] = parts;
+  if (!year || !month || !day) return String(value);
+  return `${day}-${month}-${year.slice(-2)}`;
+}
+
+function formatCurrencyNoCents(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) {
+    return "R$ 0";
+  }
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(num);
+}
+
 const ASSOCIATION_NAME = "Associacao de Moradores Jardim Tarraf II";
+const MONTHLY_FEE = 30;
 
 function escapeCsvValue(value) {
   const str = String(value ?? "");
@@ -2193,11 +2227,15 @@ function MensalidadesModal({
               ) : (
                 rows.map((row) => (
                   <tr key={row.idmensalidade} className="text-slate-700">
-                    <td className="py-3 pr-4">{row.competencia}</td>
+                    <td className="py-3 pr-4">
+                      {formatDateDisplayDash(row.competencia)}
+                    </td>
                     <td className="py-3 pr-4">{row.meses}</td>
                     <td className="py-3 pr-4">R$ {Number(row.doacao || 0).toFixed(2)}</td>
                     <td className="py-3 pr-4">R$ {Number(row.valor_total || 0).toFixed(2)}</td>
-                    <td className="py-3 pr-4">{row.data_pagamento}</td>
+                    <td className="py-3 pr-4">
+                      {formatDateDisplayDash(row.data_pagamento)}
+                    </td>
                     <td className="py-3 pr-4 text-right">
                       <button
                         className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
@@ -2767,7 +2805,15 @@ function UserDashboard({ token, onLogout }) {
     }
   }
 
-  const totalPago = payments.reduce((sum, item) => sum + Number(item.valor_total || 0), 0);
+  const sortedPayments = useMemo(() => {
+    return [...payments].sort((a, b) =>
+      String(b.competencia || "").localeCompare(String(a.competencia || ""))
+    );
+  }, [payments]);
+  const totalPago = sortedPayments.reduce(
+    (sum, item) => sum + Number(item.valor_total || 0),
+    0
+  );
   const { totalPago12m, totalDoacao12m } = useMemo(() => {
     const cutoff = new Date();
     cutoff.setHours(0, 0, 0, 0);
@@ -3070,7 +3116,7 @@ function UserDashboard({ token, onLogout }) {
                     Pagamentos
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Total pago: {formatCurrency(totalPago)}
+                    Total pago: {formatCurrencyNoCents(totalPago)}
                   </p>
                 </div>
                 <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-600">
@@ -3093,29 +3139,31 @@ function UserDashboard({ token, onLogout }) {
                     Nenhum pagamento registrado.
                   </div>
                 ) : (
-                  payments.map((item) => (
+                  sortedPayments.map((item) => (
                     <div
                       key={item.idmensalidade}
                       className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"
                     >
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
                         <span>Competencia</span>
-                        <span>{formatDateDisplay(item.competencia)}</span>
+                        <span>{formatDateDisplayDashShort(item.competencia)}</span>
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                        <span>Meses</span>
-                        <span className="text-right text-slate-700">{item.meses}</span>
+                        <span>Pagamento</span>
+                        <span className="text-right text-slate-700">
+                          {formatCurrencyNoCents(MONTHLY_FEE)}
+                        </span>
                         <span>Doacao</span>
                         <span className="text-right text-slate-700">
-                          {formatCurrency(item.doacao)}
+                          {formatCurrencyNoCents(item.doacao)}
                         </span>
                         <span>Total</span>
                         <span className="text-right font-semibold text-slate-800">
-                          {formatCurrency(item.valor_total)}
+                          {formatCurrencyNoCents(item.valor_total)}
                         </span>
                         <span>Pagamento</span>
                         <span className="text-right text-slate-700">
-                          {formatDateDisplay(item.data_pagamento)}
+                          {formatDateDisplayDashShort(item.data_pagamento)}
                         </span>
                       </div>
                     </div>
@@ -3128,10 +3176,10 @@ function UserDashboard({ token, onLogout }) {
                   <thead className="text-xs uppercase text-slate-400">
                     <tr>
                       <th className="py-3 pr-4">Competencia</th>
-                      <th className="py-3 pr-4">Meses</th>
+                      <th className="py-3 pr-4">Pagamento</th>
                       <th className="py-3 pr-4">Doacao</th>
                       <th className="py-3 pr-4">Total</th>
-                      <th className="py-3 pr-4">Pagamento</th>
+                      <th className="py-3 pr-4">Data pagamento</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -3148,16 +3196,22 @@ function UserDashboard({ token, onLogout }) {
                         </td>
                       </tr>
                     ) : (
-                      payments.map((item) => (
+                      sortedPayments.map((item) => (
                         <tr key={item.idmensalidade} className="text-slate-700">
                           <td className="py-3 pr-4">
-                            {formatDateDisplay(item.competencia)}
+                            {formatDateDisplayDashShort(item.competencia)}
                           </td>
-                          <td className="py-3 pr-4">{item.meses}</td>
-                          <td className="py-3 pr-4">{formatCurrency(item.doacao)}</td>
-                          <td className="py-3 pr-4">{formatCurrency(item.valor_total)}</td>
                           <td className="py-3 pr-4">
-                            {formatDateDisplay(item.data_pagamento)}
+                            {formatCurrencyNoCents(MONTHLY_FEE)}
+                          </td>
+                          <td className="py-3 pr-4">
+                            {formatCurrencyNoCents(item.doacao)}
+                          </td>
+                          <td className="py-3 pr-4">
+                            {formatCurrencyNoCents(item.valor_total)}
+                          </td>
+                          <td className="py-3 pr-4">
+                            {formatDateDisplayDashShort(item.data_pagamento)}
                           </td>
                         </tr>
                       ))
