@@ -26,7 +26,7 @@ const despesasUploadDir = path.join(uploadsRoot, "despesas");
 const despesasUpload = multer({
   dest: os.tmpdir(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 100 * 1024 * 1024,
     files: 4
   }
 });
@@ -34,6 +34,7 @@ const despesasUpload = multer({
 const adminUser = process.env.ADMIN_USER || "admin";
 const adminPass = process.env.ADMIN_PASS || "1234";
 const adminToken = process.env.ADMIN_TOKEN || "admin-token";
+const mobileToken = process.env.MOBILE_TOKEN || "mobile-token";
 const userTokenSecret = process.env.USER_TOKEN_SECRET || "user-secret";
 const MONTHLY_FEE = Number(process.env.MONTHLY_FEE || 30);
 const START_COMPETENCIA = "2025-12-01";
@@ -115,6 +116,15 @@ function requireAuth(req, res, next) {
   next();
 }
 
+function requireMobileToken(req, res, next) {
+  const token = String(req.headers["x-mobile-token"] || "");
+  if (!token || token !== mobileToken) {
+    res.status(401).json({ error: "Nao autorizado" });
+    return;
+  }
+  next();
+}
+
 function signUserToken(payload) {
   const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = crypto.createHmac("sha256", userTokenSecret).update(data).digest("hex");
@@ -184,6 +194,30 @@ function parseRemoveAnexos(value) {
     return [];
   }
   return [];
+}
+
+function handleDespesaUpload(req, res, next) {
+  if (!req.is("multipart/form-data")) {
+    next();
+    return;
+  }
+  despesasUpload.array("anexos", 4)(req, res, (err) => {
+    if (!err) {
+      next();
+      return;
+    }
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        res.status(413).json({ error: "Arquivo excede o limite de 100MB" });
+        return;
+      }
+      if (err.code === "LIMIT_FILE_COUNT") {
+        res.status(413).json({ error: "Limite de anexos excedido" });
+        return;
+      }
+    }
+    res.status(400).json({ error: "Falha no upload dos anexos" });
+  });
 }
 
 async function listDespesaAnexos(ids) {
@@ -472,6 +506,347 @@ function parseStatementCredits(text) {
       };
     })
     .filter((row) => row.valor > 0 && row.data_credito);
+}
+
+function normalizeOcrText(text) {
+  return String(text || "").replace(/\r/g, "");
+}
+
+function cleanLine(line) {
+  return String(line || "").replace(/\s+/g, " ").trim();
+}
+
+function isNoisyLine(line) {
+  const cleaned = cleanLine(line);
+  if (!cleaned) return true;
+  if (/[=]/.test(cleaned)) return true;
+  const letters = cleaned.replace(/[^A-Za-z]/g, "").length;
+  const digits = cleaned.replace(/[^0-9]/g, "").length;
+  const symbols = cleaned.length - letters - digits;
+  if (letters < 3) return true;
+  if (symbols > letters) return true;
+  return false;
+}
+
+async function preprocessImageForOcr(filePath, outputPath, extraArgs = []) {
+  try {
+    await execFileAsync("magick", [
+      filePath,
+      "-colorspace",
+      "Gray",
+      "-resize",
+      "200%",
+      "-auto-level",
+      "-deskew",
+      "40%",
+      ...extraArgs,
+      "-strip",
+      outputPath
+    ]);
+    return outputPath;
+  } catch (err) {
+    return null;
+  }
+}
+
+const DEFAULT_OCR_CONFIGS = [
+  ["-l", "por+eng", "--oem", "1", "--psm", "6"],
+  ["-l", "por+eng", "--oem", "1", "--psm", "4"],
+  ["-l", "por+eng", "--oem", "1", "--psm", "11"]
+];
+
+async function runTesseractWithConfigs(filePath, configs = DEFAULT_OCR_CONFIGS) {
+  for (const config of configs) {
+    try {
+      const { stdout } = await execFileAsync("tesseract", [filePath, "stdout", ...config]);
+      if (stdout && stdout.trim()) return stdout;
+    } catch (err) {
+      // try next config
+    }
+  }
+  return "";
+}
+
+async function runTesseract(filePath) {
+  const outputPath = path.join(os.tmpdir(), `ocr-pre-${crypto.randomUUID()}.png`);
+  const preprocessed = await preprocessImageForOcr(filePath, outputPath);
+  const target = preprocessed || filePath;
+  const text = await runTesseractWithConfigs(target);
+  if (preprocessed) {
+    await fs.unlink(preprocessed).catch(() => null);
+  }
+  return text;
+}
+
+async function runHeaderOcr(filePath) {
+  const outputPath = path.join(os.tmpdir(), `ocr-head-${crypto.randomUUID()}.png`);
+  const preprocessed = await preprocessImageForOcr(filePath, outputPath, [
+    "-crop",
+    "100%x30%+0+0",
+    "+repage",
+    "-unsharp",
+    "1x1+1+0"
+  ]);
+  const target = preprocessed || filePath;
+  const headerConfigs = [
+    ["-l", "por+eng", "--oem", "1", "--psm", "7"],
+    ["-l", "por+eng", "--oem", "1", "--psm", "6"]
+  ];
+  const text = await runTesseractWithConfigs(target, headerConfigs);
+  if (preprocessed) {
+    await fs.unlink(preprocessed).catch(() => null);
+  }
+  return text;
+}
+
+function extractDateFromText(text) {
+  const normalized = normalizeOcrText(text);
+  const lines = normalized.split("\n").map(cleanLine).filter(Boolean);
+  const dateRe = /(\d{2})\s*[\/.-]\s*(\d{2})\s*[\/.-]\s*(\d{4})/;
+  const labelWords = ["DATA", "EMISSAO", "EMISSÃO", "VENCIMENTO"];
+  for (let i = 0; i < lines.length; i += 1) {
+    const upper = lines[i].toUpperCase();
+    if (labelWords.some((label) => upper.includes(label))) {
+      const inline = lines[i].match(dateRe);
+      if (inline) {
+        const [, day, month, year] = inline;
+        return `${year}-${month}-${day}`;
+      }
+      const next = lines[i + 1] || "";
+      const nextMatch = next.match(dateRe);
+      if (nextMatch) {
+        const [, day, month, year] = nextMatch;
+        return `${year}-${month}-${day}`;
+      }
+    }
+  }
+  const match = normalized.match(dateRe);
+  if (!match) return null;
+  const [, day, month, year] = match;
+  return `${year}-${month}-${day}`;
+}
+
+function parseCurrencyString(value) {
+  const cleaned = String(value || "")
+    .replace(/R\$\s*/i, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^0-9.-]/g, "");
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractAmountFromText(text) {
+  const normalized = normalizeOcrText(text);
+  const lines = normalized.split("\n").map(cleanLine).filter(Boolean);
+  const currencyRe = /R?\$?\s*[\d.]+,\d{2}/;
+  const valueRe = /[\d.]+,\d{2}/;
+  const labelWords = ["VALOR TOTAL", "TOTAL A PAGAR", "TOTAL", "A PAGAR", "VALOR"];
+  const candidates = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    const upper = lines[i].toUpperCase();
+    if (!labelWords.some((label) => upper.includes(label))) continue;
+    const inline = lines[i].match(currencyRe) || lines[i].match(valueRe);
+    if (inline) {
+      const parsed = parseCurrencyString(inline[0]);
+      if (parsed !== null) candidates.push(parsed);
+      continue;
+    }
+    for (let offset = 1; offset <= 3; offset += 1) {
+      const next = lines[i + offset] || "";
+      const nextMatch = next.match(currencyRe) || next.match(valueRe);
+      if (nextMatch) {
+        const parsed = parseCurrencyString(nextMatch[0]);
+        if (parsed !== null) {
+          candidates.push(parsed);
+          break;
+        }
+      }
+    }
+  }
+  if (candidates.length) {
+    return Math.max(...candidates);
+  }
+  const matches = [...normalized.matchAll(/R?\$?\s*[\d.]+,\d{2}/g)];
+  const values = matches.map((match) => parseCurrencyString(match[0])).filter((val) =>
+    Number.isFinite(val)
+  );
+  if (!values.length) return null;
+  return Math.max(...values);
+}
+
+function findValueAfterLabels(lines, labels) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].toUpperCase();
+    if (labels.some((label) => line.includes(label))) {
+      const inline = lines[i].split(":").slice(1).join(":").trim();
+      if (inline) return inline;
+      const next = lines[i + 1] || "";
+      if (next.trim()) return next.trim();
+    }
+  }
+  return "";
+}
+
+function extractBeneficiary(text) {
+  const lines = normalizeOcrText(text)
+    .split("\n")
+    .map(cleanLine)
+    .filter(Boolean);
+  const ignoreWords = [
+    "CPF",
+    "CNPJ",
+    "IE",
+    "DOCUMENTO",
+    "DATA",
+    "VENCIMENTO",
+    "EMISSAO",
+    "TOTAL",
+    "VALOR",
+    "PIX",
+    "BOLETO",
+    "CODIGO",
+    "AUTENTICACAO",
+    "CONSUMIDOR",
+    "RECIBO",
+    "NOTA FISCAL",
+    "A PAGAR",
+    "VENDA",
+    "PDV",
+    "CHAVE",
+    "ASSOCIACAO DOS MORADORES"
+  ];
+  const addressWords = ["AV", "AV.", "RUA", "ROD", "CEP", "BAIRRO", "CASA"];
+  const candidate = findValueAfterLabels(lines, [
+    "EMITENTE",
+    "FORNECEDOR",
+    "FAVORECIDO",
+    "RAZAO SOCIAL",
+    "NOME EMPRESARIAL",
+    "PRESTADOR"
+  ]);
+  if (candidate) return candidate;
+
+  const topLines = lines
+    .slice(0, 8)
+    .map((line) => line.trim())
+    .filter((line) => line && !isNoisyLine(line));
+  for (const line of topLines) {
+    const upper = line.toUpperCase();
+    if (ignoreWords.some((word) => upper.includes(word))) continue;
+    if (addressWords.some((word) => upper.startsWith(word))) continue;
+    const letters = line.replace(/[^A-Za-z]/g, "").length;
+    const digits = line.replace(/[^0-9]/g, "").length;
+    const words = line.split(" ").filter((word) => word.length >= 2);
+    if (letters >= 6 && digits <= 2 && words.length >= 2) {
+      return line;
+    }
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    if (lines[i].toUpperCase().includes("ASSINATURA")) {
+      const next = lines[i + 1] || "";
+      if (next && /[A-Za-z]/.test(next)) return next;
+    }
+  }
+  for (const line of lines) {
+    if (!line.toUpperCase().includes("CNPJ")) continue;
+    const parts = line.split(/CNPJ|CPF/i);
+    const before = cleanLine(parts[0] || "");
+    if (before && /[A-Za-z]/.test(before)) return before;
+  }
+  let best = "";
+  let bestScore = 0;
+  let bestWords = 0;
+  for (const line of lines) {
+    const upper = line.toUpperCase();
+    if (upper.includes("RECEBI DE")) continue;
+    if (isNoisyLine(line)) continue;
+    if (ignoreWords.some((word) => upper.includes(word))) continue;
+    if (addressWords.some((word) => upper.startsWith(word))) continue;
+    const letters = line.replace(/[^A-Za-z]/g, "").length;
+    const digits = line.replace(/[^0-9]/g, "").length;
+    if (letters < 3 || digits > 4) continue;
+    const words = line.split(" ").filter((word) => word.length >= 2);
+    const score = letters / Math.max(1, line.length);
+    if (score > bestScore || (score === bestScore && words.length > bestWords)) {
+      bestScore = score;
+      bestWords = words.length;
+      best = line;
+    }
+  }
+  return best;
+}
+
+function extractNumeroNota(text) {
+  const match =
+    text.match(/NF[-\s]?E?\s*[:#-]?\s*(\d{3,})/i) ||
+    text.match(/NOTA\s*FISCAL\s*(?:N[ºO]|NUMERO)?\s*[:#-]?\s*(\d{3,})/i) ||
+    text.match(/N[ºO]\s*(\d{3,})/i);
+  return match ? match[1] : "";
+}
+
+function extractChaveNfe(text) {
+  const match = text.match(/\b(\d{44})\b/);
+  return match ? match[1] : "";
+}
+
+function detectDocType(text) {
+  const upper = text.toUpperCase();
+  if (/NFC[-\s]?E|NOTA FISCAL DE CONSUMIDOR/.test(upper)) return "NFC-E";
+  if (/NF[-\s]?E|NFE|DANFE|NOTA FISCAL ELETRONICA/.test(upper)) return "NFE";
+  if (/NFS[-\s]?E|NOTA FISCAL DE SERVI[CÇ]O/.test(upper)) return "NFS-E";
+  if (/NOTA FISCAL DE SERVI[CÇ]OS DE COMUNICA[CÇ][AÃ]O/.test(upper)) return "NFS-COM";
+  if (/CUPOM FISCAL|CF-E|SAT/.test(upper)) return "CUPOM";
+  if (/RECIBO/.test(upper)) return "RECIBO";
+  return "DESPESA";
+}
+
+async function extractTextFromFile(filePath, mimeType) {
+  const isPdf = mimeType && mimeType.toLowerCase().includes("pdf");
+  if (isPdf) {
+    try {
+      const { stdout } = await execFileAsync("pdftotext", ["-layout", filePath, "-"]);
+      const text = stdout || "";
+      if (text.trim()) return text;
+    } catch (err) {
+      // ignore and try OCR below
+    }
+    try {
+      const tempBase = path.join(os.tmpdir(), `ocr-${crypto.randomUUID()}`);
+      await execFileAsync("pdftoppm", ["-jpeg", "-r", "300", "-singlefile", filePath, tempBase]);
+      const imagePath = `${tempBase}.jpg`;
+      const headerText = await runHeaderOcr(imagePath);
+      const ocrText = await runTesseract(imagePath);
+      const merged = [headerText, ocrText].filter((item) => item && item.trim()).join("\n");
+      await fs.unlink(imagePath).catch(() => null);
+      if (merged.trim()) return merged;
+    } catch (err) {
+      // ignore and try direct OCR below
+    }
+  }
+  const headerText = await runHeaderOcr(filePath);
+  const ocrText = await runTesseract(filePath);
+  const merged = [headerText, ocrText].filter((item) => item && item.trim()).join("\n");
+  return merged;
+}
+
+function analyzeDocumentText(text) {
+  const normalized = normalizeOcrText(text);
+  const tipo_documento = detectDocType(normalized);
+  const beneficiario = extractBeneficiary(normalized);
+  const data_despesa = extractDateFromText(normalized);
+  const valor = extractAmountFromText(normalized);
+  const numero_nota = extractNumeroNota(normalized);
+  const chave_nfe = extractChaveNfe(normalized);
+  return {
+    tipo_documento,
+    beneficiario: beneficiario || null,
+    data_despesa,
+    valor,
+    numero_nota: numero_nota || null,
+    chave_nfe: chave_nfe || null
+  };
 }
 
 function computeMatchCandidates(credit, inscritos, manualMap) {
@@ -935,6 +1310,102 @@ app.get("/api/mensalidades", requireAuth, async (req, res) => {
   }
 });
 
+function validateDespesaInput({ data_despesa, valor, beneficiario, files }) {
+  const valorNum = Number(valor);
+  if (!data_despesa) {
+    return { error: "Data da despesa e obrigatoria", status: 400 };
+  }
+  if (!beneficiario || !String(beneficiario).trim()) {
+    return { error: "Beneficiario e obrigatorio", status: 400 };
+  }
+  if (!Number.isFinite(valorNum) || valorNum < 0) {
+    return { error: "Valor deve ser um numero valido", status: 400 };
+  }
+  if (files.length > 4) {
+    return { error: "Maximo de 4 anexos por despesa", status: 400 };
+  }
+  return { valorNum };
+}
+
+async function insertDespesaRecord({
+  data_despesa,
+  valorNum,
+  beneficiario,
+  descricao,
+  numero_nota,
+  chave_nfe,
+  files
+}) {
+  const hash = createDespesaHash({
+    data_despesa,
+    valor: valorNum,
+    beneficiario,
+    descricao
+  });
+  let insertedId = null;
+  const storedFiles = [];
+  const normalizedBeneficiario = String(beneficiario).trim();
+  try {
+    const [result] = await pool.query(
+      "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, hash, created_at, updated_at) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+      [
+        data_despesa,
+        valorNum,
+        normalizedBeneficiario,
+        descricao || null,
+        numero_nota || null,
+        chave_nfe || null,
+        hash
+      ]
+    );
+    insertedId = result.insertId;
+    for (const file of files) {
+      const stored = await storeDespesaAnexoFile(file);
+      storedFiles.push(stored);
+    }
+    if (storedFiles.length) {
+      const values = storedFiles.map((stored) => [
+        insertedId,
+        stored.originalName,
+        stored.storedName,
+        stored.mimeType,
+        stored.size
+      ]);
+      await pool.query(
+        "INSERT INTO despesas_anexos (iddespesa, nome_original, nome_armazenado, mime_type, tamanho) VALUES ?",
+        [values]
+      );
+    }
+    return {
+      iddespesa: insertedId,
+      data_despesa,
+      valor: valorNum,
+      beneficiario: normalizedBeneficiario,
+      descricao: descricao || null,
+      numero_nota: numero_nota || null,
+      chave_nfe: chave_nfe || null,
+      anexos: storedFiles.map((stored) => ({
+        nome: stored.originalName,
+        url: `/uploads/despesas/${stored.storedName}`,
+        mimeType: stored.mimeType,
+        tamanho: stored.size
+      }))
+    };
+  } catch (err) {
+    console.error("Erro ao cadastrar despesa:", err);
+    if (insertedId) {
+      await pool.query("DELETE FROM despesas WHERE iddespesa = ?", [insertedId]);
+    }
+    await Promise.all(
+      storedFiles.map((stored) =>
+        fs.unlink(path.join(despesasUploadDir, stored.storedName)).catch(() => null)
+      )
+    );
+    throw err;
+  }
+}
+
 app.get("/api/despesas", requireAuth, async (req, res) => {
   const month = req.query.month;
   try {
@@ -964,98 +1435,97 @@ app.get("/api/despesas", requireAuth, async (req, res) => {
 app.post(
   "/api/despesas",
   requireAuth,
-  (req, res, next) => {
-    if (!req.is("multipart/form-data")) {
-      next();
-      return;
-    }
-    despesasUpload.array("anexos", 4)(req, res, next);
-  },
+  handleDespesaUpload,
   async (req, res) => {
     const { data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe } = req.body || {};
     const files = Array.isArray(req.files) ? req.files : [];
-    const valorNum = Number(valor);
-    if (!data_despesa) {
-      res.status(400).json({ error: "Data da despesa e obrigatoria" });
-      return;
-    }
-    if (!beneficiario || !String(beneficiario).trim()) {
-      res.status(400).json({ error: "Beneficiario e obrigatorio" });
-      return;
-    }
-    if (!Number.isFinite(valorNum) || valorNum < 0) {
-      res.status(400).json({ error: "Valor deve ser um numero valido" });
-      return;
-    }
-    if (files.length > 4) {
-      res.status(400).json({ error: "Maximo de 4 anexos por despesa" });
-      return;
-    }
-    const hash = createDespesaHash({
-      data_despesa,
-      valor: valorNum,
-      beneficiario,
-      descricao
-    });
-    let insertedId = null;
-    const storedFiles = [];
     try {
-      const [result] = await pool.query(
-        "INSERT INTO despesas (data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, hash, created_at, updated_at) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
-        [
-          data_despesa,
-          valorNum,
-          String(beneficiario).trim(),
-          descricao || null,
-          numero_nota || null,
-          chave_nfe || null,
-          hash
-        ]
-      );
-      insertedId = result.insertId;
-      for (const file of files) {
-        const stored = await storeDespesaAnexoFile(file);
-        storedFiles.push(stored);
+      const validated = validateDespesaInput({ data_despesa, valor, beneficiario, files });
+      if (validated.error) {
+        res.status(validated.status || 400).json({ error: validated.error });
+        return;
       }
-      if (storedFiles.length) {
-        const values = storedFiles.map((stored) => [
-          insertedId,
-          stored.originalName,
-          stored.storedName,
-          stored.mimeType,
-          stored.size
-        ]);
-        await pool.query(
-          "INSERT INTO despesas_anexos (iddespesa, nome_original, nome_armazenado, mime_type, tamanho) VALUES ?",
-          [values]
-        );
-      }
-      res.status(201).json({
-        iddespesa: insertedId,
+      const payload = await insertDespesaRecord({
         data_despesa,
-        valor: valorNum,
-        beneficiario: String(beneficiario).trim(),
-        descricao: descricao || null,
-        numero_nota: numero_nota || null,
-        chave_nfe: chave_nfe || null,
-        anexos: storedFiles.map((stored) => ({
-          nome: stored.originalName,
-          url: `/uploads/despesas/${stored.storedName}`,
-          mimeType: stored.mimeType,
-          tamanho: stored.size
-        }))
+        valorNum: validated.valorNum,
+        beneficiario,
+        descricao,
+        numero_nota,
+        chave_nfe,
+        files
+      });
+      res.status(201).json(payload);
+    } catch (err) {
+      if (err?.code === "ER_DUP_ENTRY") {
+        res.status(409).json({ error: "Despesa ja cadastrada" });
+        return;
+      }
+      res.status(500).json({ error: "Erro ao cadastrar despesa" });
+    }
+  }
+);
+
+app.post(
+  "/api/mobile/despesas/analisar",
+  requireMobileToken,
+  upload.single("file"),
+  async (req, res) => {
+    const file = req.file;
+    if (!file) {
+      res.status(400).json({ error: "Arquivo nao enviado" });
+      return;
+    }
+    try {
+      console.log("[OCR] Arquivo recebido:", {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
+      const text = await extractTextFromFile(file.path, file.mimetype);
+      console.log("[OCR] Texto extraido (amostra):", (text || "").slice(0, 400));
+      const analysis = analyzeDocumentText(text);
+      console.log("[OCR] Analise:", analysis);
+      res.json({
+        ...analysis,
+        ocr_text_length: text.length
       });
     } catch (err) {
-      console.error("Erro ao cadastrar despesa:", err);
-      if (insertedId) {
-        await pool.query("DELETE FROM despesas WHERE iddespesa = ?", [insertedId]);
+      console.error("Erro ao analisar arquivo:", err);
+      res.status(500).json({ error: "Nao foi possivel analisar o arquivo" });
+    } finally {
+      try {
+        await fs.unlink(file.path);
+      } catch (cleanupErr) {
+        // ignore cleanup failures
       }
-      await Promise.all(
-        storedFiles.map((stored) =>
-          fs.unlink(path.join(despesasUploadDir, stored.storedName)).catch(() => null)
-        )
-      );
+    }
+  }
+);
+
+app.post(
+  "/api/mobile/despesas",
+  requireMobileToken,
+  handleDespesaUpload,
+  async (req, res) => {
+    const { data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe } = req.body || {};
+    const files = Array.isArray(req.files) ? req.files : [];
+    try {
+      const validated = validateDespesaInput({ data_despesa, valor, beneficiario, files });
+      if (validated.error) {
+        res.status(validated.status || 400).json({ error: validated.error });
+        return;
+      }
+      const payload = await insertDespesaRecord({
+        data_despesa,
+        valorNum: validated.valorNum,
+        beneficiario,
+        descricao,
+        numero_nota,
+        chave_nfe,
+        files
+      });
+      res.status(201).json(payload);
+    } catch (err) {
       if (err?.code === "ER_DUP_ENTRY") {
         res.status(409).json({ error: "Despesa ja cadastrada" });
         return;
@@ -1068,13 +1538,7 @@ app.post(
 app.put(
   "/api/despesas/:id",
   requireAuth,
-  (req, res, next) => {
-    if (!req.is("multipart/form-data")) {
-      next();
-      return;
-    }
-    despesasUpload.array("anexos", 4)(req, res, next);
-  },
+  handleDespesaUpload,
   async (req, res) => {
     const { id } = req.params;
     const { data_despesa, valor, beneficiario, descricao, numero_nota, chave_nfe, removeAnexos } =

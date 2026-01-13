@@ -7,6 +7,7 @@ Este projeto agora permite importar despesas a partir de PDF (extrato Sicoob).
 - Node.js 20.x (recomendado)
 - MySQL 8.x
 - `pdftotext` no PATH (pacote `poppler-utils` no Linux)
+- `tesseract` no PATH para OCR dos comprovantes do app mobile
 
 ## Dependencias
 
@@ -53,6 +54,7 @@ DB_NAME=amjt2
 ADMIN_USER=admin
 ADMIN_PASS=1234
 ADMIN_TOKEN=admin-token
+MOBILE_TOKEN=seu-token-fixo
 VITE_API_URL=http://SEU_IP:3001
 ```
 

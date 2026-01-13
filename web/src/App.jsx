@@ -15,7 +15,7 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import logo from "./logo.jpeg";
 import qrCode from "./qr-code.svg";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL || "http://192.168.0.14:3001";
 
 function apiFetch(path, options = {}, token) {
   const headers = {
@@ -40,8 +40,26 @@ function apiUpload(path, formData, token, method = "POST") {
   });
 }
 
+function parseAmount(value) {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const raw = String(value).trim();
+  if (!raw) return 0;
+  const hasComma = raw.includes(",");
+  const hasDot = raw.includes(".");
+  let normalized = raw;
+  if (hasComma && hasDot) {
+    normalized = normalized.replace(/\./g, "").replace(",", ".");
+  } else if (hasComma) {
+    normalized = normalized.replace(",", ".");
+  }
+  normalized = normalized.replace(/[^0-9.-]/g, "");
+  const num = Number(normalized);
+  return Number.isFinite(num) ? num : 0;
+}
+
 function formatCurrency(value) {
-  const num = Number(value);
+  const num = parseAmount(value);
   if (!Number.isFinite(num)) {
     return "R$ 0,00";
   }
@@ -82,7 +100,7 @@ function formatDateDisplayDashShort(value) {
 }
 
 function formatCurrencyNoCents(value) {
-  const num = Number(value);
+  const num = parseAmount(value);
   if (!Number.isFinite(num)) {
     return "R$ 0";
   }
@@ -182,8 +200,16 @@ function buildBalancetePdf({ mesKey, mesLabel, openingBalance, creditosRows, des
   doc.text(`Gerado em: ${generatedAt}`, marginX, cursorY);
   cursorY += 18;
 
-  const creditosTotal = creditosRows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
-  const despesasTotal = despesasRows.reduce((sum, row) => sum + Number(row.valor || 0), 0);
+  const creditosCents = creditosRows.reduce(
+    (sum, row) => sum + Math.round(parseAmount(row.valor) * 100),
+    0
+  );
+  const despesasCents = despesasRows.reduce(
+    (sum, row) => sum + Math.round(parseAmount(row.valor) * 100),
+    0
+  );
+  const creditosTotal = creditosCents / 100;
+  const despesasTotal = despesasCents / 100;
   const saldoFinal = Number((openingBalance + creditosTotal - despesasTotal).toFixed(2));
   const [year, month] = (mesKey || "").split("-");
   const monthLabel = month && year ? `${month}/${year}` : "";
