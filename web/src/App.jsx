@@ -904,6 +904,7 @@ function DespesaModal({
   form,
   onChange,
   onSave,
+  onDelete,
   existingAnexos,
   newAnexos,
   onAddAnexos,
@@ -1084,7 +1085,15 @@ function DespesaModal({
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex items-center gap-3">
+          {isEdit ? (
+            <button
+              className="mr-auto rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+              onClick={onDelete}
+            >
+              Excluir despesa
+            </button>
+          ) : null}
           <button
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50"
             onClick={onClose}
@@ -3732,6 +3741,29 @@ function Dashboard({ token, onLogout }) {
     }
   }
 
+  async function handleDeleteDespesa() {
+    if (!despesasEditing?.iddespesa) return;
+    setDespesasLoading(true);
+    setDespesasError("");
+    try {
+      const response = await apiFetch(
+        `/api/despesas/${despesasEditing.iddespesa}`,
+        { method: "DELETE" },
+        token
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Falha ao excluir despesa");
+      }
+      await loadDespesas();
+      closeDespesaModal();
+    } catch (err) {
+      setDespesasError(err.message || "Nao foi possivel excluir a despesa.");
+    } finally {
+      setDespesasLoading(false);
+    }
+  }
+
   async function handleParseExtrato(file) {
     if (!file) return;
     setDespesasImportLoading(true);
@@ -4949,6 +4981,7 @@ function Dashboard({ token, onLogout }) {
         form={despesasForm}
         onChange={updateDespesaField}
         onSave={handleSaveDespesa}
+        onDelete={handleDeleteDespesa}
         existingAnexos={despesasExistingAnexos}
         newAnexos={despesasFiles}
         onAddAnexos={handleAddDespesaAnexos}
