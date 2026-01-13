@@ -114,6 +114,7 @@ function formatCurrencyNoCents(value) {
 
 const ASSOCIATION_NAME = "Associacao de Moradores Jardim Tarraf II";
 const MONTHLY_FEE = 30;
+const BALANCETE_SALDO_BASE = { mes: "2026-01", valor: 3654.07 };
 
 function escapeCsvValue(value) {
   const str = String(value ?? "");
@@ -3549,10 +3550,17 @@ function Dashboard({ token, onLogout }) {
 
   function getSaldoInicial(monthKey) {
     if (!monthKey) return 0;
+    if (monthKey < BALANCETE_SALDO_BASE.mes) {
+      return resumoSaldoBase.reduce((sum, item) => {
+        if (!item.mes || item.mes >= monthKey) return sum;
+        return sum + item.saldo;
+      }, 0);
+    }
     return resumoSaldoBase.reduce((sum, item) => {
-      if (!item.mes || item.mes >= monthKey) return sum;
+      if (!item.mes || item.mes < BALANCETE_SALDO_BASE.mes) return sum;
+      if (item.mes >= monthKey) return sum;
       return sum + item.saldo;
-    }, 0);
+    }, BALANCETE_SALDO_BASE.valor);
   }
 
   async function handleBalancete(monthKey) {
