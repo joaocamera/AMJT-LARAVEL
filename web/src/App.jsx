@@ -450,6 +450,20 @@ const MONTH_LABELS = [
   "Novembro",
   "Dezembro"
 ];
+const EXTRATO_MONTH_LABELS = [
+  "JANEIRO",
+  "FEVEREIRO",
+  "MARÇO",
+  "ABRIL",
+  "MAIO",
+  "JUNHO",
+  "JULHO",
+  "AGOSTO",
+  "SETEMBRO",
+  "OUTUBRO",
+  "NOVEMBRO",
+  "DEZEMBRO"
+];
 
 function normalizeText(value) {
   return String(value || "")
@@ -466,6 +480,17 @@ function formatMonthYear(key) {
   const monthIndex = Number(month) - 1;
   const label = MONTH_LABELS[monthIndex] || key;
   return `${label} ${year || ""}`.trim();
+}
+
+function getExtratoUrl(monthKey) {
+  if (!monthKey) return "";
+  const [year, month] = monthKey.split("-");
+  if (year !== "2025") return "";
+  const monthIndex = Number(month) - 1;
+  const label = EXTRATO_MONTH_LABELS[monthIndex];
+  if (!label) return "";
+  const fileName = `EXTRATO ${label} ${year}.pdf`;
+  return `${API_BASE}/extratos/${encodeURIComponent(fileName)}`;
 }
 
 function getDespesaMonthKey(row) {
@@ -3359,7 +3384,7 @@ function Dashboard({ token, onLogout }) {
         });
       }
       const entry = map.get(key);
-      const valorNum = Number(row.valor || 0);
+      const valorNum = parseAmount(row.valor);
       entry.count += 1;
       entry.total += valorNum;
       if (valorNum > entry.max) {
@@ -3375,7 +3400,7 @@ function Dashboard({ token, onLogout }) {
       .sort((a, b) => b.key.localeCompare(a.key));
   }, [despesasRows]);
   const despesasTotal = useMemo(
-    () => despesasRows.reduce((sum, row) => sum + Number(row.valor || 0), 0),
+    () => despesasRows.reduce((sum, row) => sum + parseAmount(row.valor), 0),
     [despesasRows]
   );
   const despesasRecentes = useMemo(() => despesasRows, [despesasRows]);
@@ -3615,6 +3640,12 @@ function Dashboard({ token, onLogout }) {
       return;
     }
     setResumoMonthKey(key);
+  }
+
+  function openExtratoMonth(key) {
+    const url = getExtratoUrl(key);
+    if (!url) return;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function openDespesaModal(row = null) {
@@ -4278,100 +4309,127 @@ function Dashboard({ token, onLogout }) {
             </p>
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {resumoCards.map((item) => (
-                <div
-                  key={item.mes}
-                  className={`cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:border-blue-100 hover:shadow-lg ${
-                    resumoMonthKey === item.mes
-                      ? "border-blue-200 ring-1 ring-blue-100"
-                      : ""
-                  }`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openResumoMonth(item.mes)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      openResumoMonth(item.mes);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
-                    <span>{formatMonthYear(item.mes)}</span>
-                    {resumoMonthKey === item.mes ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="mt-4 grid gap-3 text-sm text-slate-600">
-                    <div className="flex items-center justify-between">
-                      <span>Receitas</span>
-                      <span className="font-semibold text-slate-800">
-                        {formatCurrency(item.creditos_total)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Despesas</span>
-                      <span className="font-semibold text-slate-800">
-                        {formatCurrency(item.despesas_total)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>Creditos: {item.creditos_count}</span>
-                      <span>Despesas: {item.despesas_count}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-nowrap gap-2">
-                    <button
-                      className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openCreditosMonth(item.mes);
-                      }}
-                      title="Receitas"
-                      aria-label="Receitas"
-                    >
-                      <ArrowUpCircle className="h-4 w-4" />
-                      <span className="sm:hidden">Receitas</span>
-                    </button>
-                    <button
-                      className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        openMonthDetails(item.mes);
-                      }}
-                      title="Despesas"
-                      aria-label="Despesas"
-                    >
-                      <ArrowDownCircle className="h-4 w-4" />
-                      <span className="sm:hidden">Despesas</span>
-                    </button>
-                    <button
-                      className={`flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 ${
-                        balanceteBusyMonth === item.mes
-                          ? "cursor-not-allowed opacity-60"
-                          : ""
-                      }`}
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (balanceteBusyMonth === item.mes) return;
-                        handleBalancete(item.mes);
-                      }}
-                      title="Balancete"
-                      aria-label="Balancete"
-                    >
-                      {balanceteBusyMonth === item.mes ? (
-                        <span className="font-semibold">...</span>
+              {resumoCards.map((item) => {
+                const extratoUrl = getExtratoUrl(item.mes);
+                const extratoAvailable = Boolean(extratoUrl);
+                return (
+                  <div
+                    key={item.mes}
+                    className={`cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 shadow-card transition hover:border-blue-100 hover:shadow-lg ${
+                      resumoMonthKey === item.mes
+                        ? "border-blue-200 ring-1 ring-blue-100"
+                        : ""
+                    }`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openResumoMonth(item.mes)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openResumoMonth(item.mes);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-slate-400">
+                      <span>{formatMonthYear(item.mes)}</span>
+                      {resumoMonthKey === item.mes ? (
+                        <ChevronUp className="h-4 w-4" />
                       ) : (
-                        <FileText className="h-4 w-4" />
+                        <ChevronDown className="h-4 w-4" />
                       )}
-                      <span className="sm:hidden">Balancete</span>
-                    </button>
+                    </div>
+                    <div className="mt-4 grid gap-3 text-sm text-slate-600">
+                      <div className="flex items-center justify-between">
+                        <span>Receitas</span>
+                        <span className="font-semibold text-slate-800">
+                          {formatCurrency(item.creditos_total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Despesas</span>
+                        <span className="font-semibold text-slate-800">
+                          {formatCurrency(item.despesas_total)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Creditos: {item.creditos_count}</span>
+                        <span>Despesas: {item.despesas_count}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-nowrap gap-2">
+                      <button
+                        className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openCreditosMonth(item.mes);
+                        }}
+                        title="Receitas"
+                        aria-label="Receitas"
+                        type="button"
+                      >
+                        <ArrowUpCircle className="h-4 w-4" />
+                        <span className="sm:hidden">Receitas</span>
+                      </button>
+                      <button
+                        className="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openMonthDetails(item.mes);
+                        }}
+                        title="Despesas"
+                        aria-label="Despesas"
+                        type="button"
+                      >
+                        <ArrowDownCircle className="h-4 w-4" />
+                        <span className="sm:hidden">Despesas</span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 ${
+                          balanceteBusyMonth === item.mes
+                            ? "cursor-not-allowed opacity-60"
+                            : ""
+                        }`}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (balanceteBusyMonth === item.mes) return;
+                          handleBalancete(item.mes);
+                        }}
+                        title="Balancete"
+                        aria-label="Balancete"
+                      >
+                        {balanceteBusyMonth === item.mes ? (
+                          <span className="font-semibold">...</span>
+                        ) : (
+                          <FileText className="h-4 w-4" />
+                        )}
+                        <span className="sm:hidden">Balancete</span>
+                      </button>
+                      <button
+                        className={`flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 ${
+                          extratoAvailable ? "" : "cursor-not-allowed opacity-50"
+                        }`}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (!extratoAvailable) return;
+                          openExtratoMonth(item.mes);
+                        }}
+                        title={
+                          extratoAvailable
+                            ? "Extrato"
+                            : "Extrato indisponivel"
+                        }
+                        aria-label="Extrato"
+                        disabled={!extratoAvailable}
+                      >
+                        <Search className="h-4 w-4" />
+                        <span className="sm:hidden">Extrato</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

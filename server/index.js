@@ -6,6 +6,7 @@ import fs from "fs/promises";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
+import { fileURLToPath } from "url";
 import { execFile } from "child_process";
 import multer from "multer";
 import pool from "./db.js";
@@ -15,6 +16,7 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3001;
 const execFileAsync = promisify(execFile);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const upload = multer({
   dest: os.tmpdir(),
   limits: {
@@ -23,6 +25,7 @@ const upload = multer({
 });
 const uploadsRoot = process.env.UPLOADS_DIR || path.join(process.cwd(), "uploads");
 const despesasUploadDir = path.join(uploadsRoot, "despesas");
+const extratosRoot = path.join(__dirname, "extratos");
 const despesasUpload = multer({
   dest: os.tmpdir(),
   limits: {
@@ -48,6 +51,7 @@ function formatCompetencia(date) {
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(uploadsRoot));
+app.use("/extratos", express.static(extratosRoot));
 
 const accessLogDir = path.join(process.cwd(), "logs");
 const accessLogFile = path.join(accessLogDir, "access.log");

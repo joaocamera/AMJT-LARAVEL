@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Tarraf II",
+    "slug": "tarraf-ii",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "tarraf-ii",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -20,7 +20,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.jcamera_estracta.mobile"
+      "package": "com.jcamera_estracta.tarrafii"
     },
     "web": {
       "output": "static",
@@ -48,8 +48,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a24c745b-3c59-46b8-a8e8-6ade426af058"
+        "projectId": "7401d80a-ae75-4bb2-8c91-eb3321325547"
       }
-    }
+    },
+    "owner": "jcamera_estracta"
   }
 }
